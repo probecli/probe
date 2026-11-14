@@ -1,0 +1,41 @@
+{
+  "slug": "scheduled-exit-fee-withdrawals",
+  "title": "Withdrawals around a scheduled exit-fee change",
+  "summary": "Replay full and partial liquidity withdrawals against a Uniswap v4 hook that charges an exit fee scheduled to change from the next block.",
+  "objective": "Show whether a liquidity provider can be charged an exit fee different from the fee the hook declares for the block they withdraw in.",
+  "inScope": [
+    "afterRemoveLiquidity on the job's pool, full and partial withdrawals",
+    "Exit-fee changes made through scheduleFee, in the same block or earlier blocks",
+    "The declared fee returned by feeForBlock"
+  ],
+  "outOfScope": [
+    "The Uniswap v4 PoolManager and periphery contracts themselves",
+    "Owner key compromise",
+    "Gas griefing without a balance effect"
+  ],
+  "acceptanceRules": [
+    "The case inherits the job fixture and reproduces on the pinned snapshot with no extra state.",
+    "The case asserts a concrete balance or fee outcome.",
+    "A case is a duplicate if its execution path through the hook matches an accepted case.",
+    "Cases that read wall-clock time, randomness, the network, files or environment variables fail verification.",
+    "Cases may not rewrite contract code or storage."
+  ],
+  "network": { "id": "local", "name": "Local test chain" },
+  "hook": { "name": "ScheduledExitFeeHook", "callbacks": ["afterRemoveLiquidity"] },
+  "snapshot": {
+    "id": "exit-fee-snap-4812330",
+    "block": 4812330,
+    "note": "Foundry fixture pinned to block 4,812,330 and a fixed timestamp: a v4 PoolManager, two tokens, the hook at a flag-valid address, and one LP position."
+  },
+  "workspace": { "path": "jobs/scheduled-exit-fee" },
+  "fixture": { "base": "ProbeCase", "import": "../ProbeCase.sol" },
+  "targets": ["src/ScheduledExitFeeHook.sol"],
+  "allowedImports": ["forge-std/", "v4-core/", "solmate/"],
+  "seedCases": "seed-cases",
+  "rewardModel": "findings-and-coverage",
+  "reward": {
+    "headline": "Paid per accepted case",
+    "detail": "Each new execution path through the hook that reproduces and asserts an outcome is paid once."
+  },
+  "sponsor": "PROBE example sponsor"
+}

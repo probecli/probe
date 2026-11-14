@@ -1,0 +1,10 @@
+node_modules/
+.data/
+.tmp/
+out/
+cache/
+!contracts/lib/**/out/
+*.env
+.env*
+!.env.example
+.DS_Store
