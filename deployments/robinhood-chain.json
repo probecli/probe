@@ -1,0 +1,22 @@
+{
+  "mainnet": {
+    "chainId": 4663,
+    "rpc": "https://rpc.mainnet.chain.robinhood.com",
+    "explorer": "https://robinhoodchain.blockscout.com",
+    "ProbeJobs": "0x75a7af44fe0117b1f5ff11eddad11fe1e0d34189",
+    "deployTx": "0x464a436bcb35e327a66eacd338d64627883dd277e97bca103509c6157a6f9143",
+    "setVerifierTx": "0xba52a5da148e040b05be556cd72eeb0703f6291f89b096062079f3d8dbe62381",
+    "owner": "0xfdbf67fbf0d089212189d9b35546962100a0b764",
+    "verifier": "0xd3c30efc0b0867963193c1d2dfd9fe31a442d746",
+    "sponsor": "0xf6cd1140783d65e2bd7ff361a84957f77b8cffbe",
+    "sourceVerified": "sourcify exact_match"
+  },
+  "testnet": {
+    "chainId": 46630,
+    "rpc": "https://rpc.testnet.chain.robinhood.com",
+    "explorer": "https://explorer.testnet.chain.robinhood.com",
+    "ProbeJobs": "0x75a7af44fe0117b1f5ff11eddad11fe1e0d34189",
+    "rehearsal": { "token": "0xb6b035E7808d16Ddc795a3B89f245d326bA1a492", "payoutTx": "0x7f50fb8e190b40c4313ecb6437be2a248869dc7e5b3f9ae5f3a5c7358c7d1d7d" },
+    "sourceVerified": "sourcify exact_match"
+  }
+}

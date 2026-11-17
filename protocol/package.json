@@ -1,0 +1,32 @@
+{
+  "name": "probe-protocol",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PROBE verifier service and probe CLI",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "bin": {
+    "probe": "./bin/probe.mjs"
+  },
+  "scripts": {
+    "verifier": "node src/verifier/server.ts",
+    "probe": "node bin/probe.mjs",
+    "abi": "node scripts/gen-abi.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test test/unit.test.ts",
+    "e2e": "node scripts/e2e.ts",
+    "preflight": "node scripts/preflight.ts",
+    "dev:stack": "node scripts/dev-stack.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.8.0",
+    "tweetnacl": "^1.0.3",
+    "viem": "^2.57.19"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2"
+  }
+}
