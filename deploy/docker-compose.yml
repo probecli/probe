@@ -1,0 +1,31 @@
+# PROBE verifier on a server: the verifier plus Caddy for automatic HTTPS.
+# Started by scripts/deploy-verifier.sh. Only Caddy is reachable from outside.
+services:
+  verifier:
+    build:
+      context: ..
+      dockerfile: protocol/Dockerfile
+    env_file: verifier.env
+    volumes:
+      - verifier-data:/data
+    restart: unless-stopped
+    mem_limit: 3g
+    pids_limit: 512
+
+  caddy:
+    image: caddy:2
+    environment:
+      - VERIFIER_DOMAIN=${VERIFIER_DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    restart: unless-stopped
+    depends_on:
+      - verifier
+
+volumes:
+  verifier-data:
+  caddy-data:

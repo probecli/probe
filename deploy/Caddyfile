@@ -1,0 +1,4 @@
+{$VERIFIER_DOMAIN} {
+	encode gzip
+	reverse_proxy verifier:8787
+}
