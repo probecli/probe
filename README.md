@@ -82,8 +82,9 @@ If `npm link` fails with a permissions error, use `alias probe="node $PWD/bin/pr
 | Verifier | [`verifier.probecli.com`](https://verifier.probecli.com) · `0xd3c30efc0b0867963193c1d2dfd9fe31a442d746` |
 | Owner | `0xfdbf67fbf0d089212189d9b35546962100a0b764` |
 | Source | Verified on Sourcify, exact match |
+| First paid job | Job 1 funded with 0.002 ETH ([tx](https://robinhoodchain.blockscout.com/tx/0xeb8b6baaeca17c008e19fbaf96dfa528b1a0b2157381a6b83c20c20da33a38f1)); one case accepted and paid 0.0002 ETH ([tx](https://robinhoodchain.blockscout.com/tx/0x1bd71402396b9c4ddb6e01a023c4f8b0ca9da0c4864a60551e65f951371c08f0)); operator withdrew it ([tx](https://robinhoodchain.blockscout.com/tx/0x3cff2fe1ddcdfb6541faf89cdd9d23b72dd995ca29593926c9d7ad1626d3f5b2)) |
 
-Deployment and approval transactions: [`deployments/robinhood-chain.json`](deployments/robinhood-chain.json).
+Deployment, approval and first-job transactions: [`deployments/robinhood-chain.json`](deployments/robinhood-chain.json). The first job was funded by the PROBE team to run the full loop on mainnet; see it at [probecli.com/jobs/scheduled-exit-fee-withdrawals](https://probecli.com/jobs/scheduled-exit-fee-withdrawals).
 
 ### Verify the deployed contract
 
