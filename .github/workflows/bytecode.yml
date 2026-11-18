@@ -1,0 +1,23 @@
+name: bytecode
+
+# Rebuilds ProbeJobs from contracts/ and compares it with the code deployed on
+# Robinhood Chain. Runs daily so the badge reflects the chain, not just the last push.
+on:
+  push:
+    branches: [main]
+    paths: [contracts/**, deployments/**, scripts/verify-bytecode.sh]
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: deployed bytecode matches source
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: foundry-rs/foundry-toolchain@v1
+      - run: scripts/verify-bytecode.sh
