@@ -5,7 +5,8 @@
 <p align="center">
   <a href="https://verifier.probecli.com"><img src="https://img.shields.io/website?url=https%3A%2F%2Fverifier.probecli.com%2Fhealth&style=flat-square&label=verifier&up_message=live&up_color=e83f28&down_message=down&labelColor=141413" alt="Verifier status"></a>
   <a href="https://robinhoodchain.blockscout.com/address/0x75a7af44fe0117b1f5ff11eddad11fe1e0d34189"><img src="https://img.shields.io/badge/ProbeJobs-0x75a7…4189-e83f28?style=flat-square&labelColor=141413" alt="ProbeJobs contract"></a>
-  <a href="#verify-the-deployed-contract"><img src="https://img.shields.io/badge/bytecode-exact_match-e83f28?style=flat-square&labelColor=141413" alt="Bytecode matches"></a>
+  <a href="https://github.com/probecli/probe/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/probecli/probe/ci.yml?branch=main&style=flat-square&label=tests&labelColor=141413" alt="Tests"></a>
+  <a href="https://github.com/probecli/probe/actions/workflows/bytecode.yml"><img src="https://img.shields.io/github/actions/workflow/status/probecli/probe/bytecode.yml?branch=main&style=flat-square&label=deployed%20bytecode&labelColor=141413" alt="Deployed bytecode matches source"></a>
   <img src="https://img.shields.io/badge/solidity-0.8.26-141413?style=flat-square&logo=solidity" alt="Solidity 0.8.26">
   <img src="https://img.shields.io/badge/node-22.18%2B-141413?style=flat-square&logo=nodedotjs" alt="Node 22.18+">
   <a href="https://probecli.com"><img src="https://img.shields.io/badge/probecli.com-141413?style=flat-square" alt="Website"></a>
@@ -89,11 +90,12 @@ Deployment and approval transactions: [`deployments/robinhood-chain.json`](deplo
 The bytecode on mainnet is built from [`contracts/`](contracts) with solc 0.8.26, optimizer at 200 runs, EVM cancun:
 
 ```shell
-cd contracts && forge build --force
-diff <(jq -r .deployedBytecode.object out/ProbeJobs.sol/ProbeJobs.json) \
-     <(cast code 0x75a7af44fe0117b1f5ff11eddad11fe1e0d34189 --rpc-url https://rpc.mainnet.chain.robinhood.com) \
-  && echo "bytecode matches"
+scripts/verify-bytecode.sh
+# mainnet: 0x75a7af44fe0117b1f5ff11eddad11fe1e0d34189 matches contracts/ (5929 bytes)
+# testnet: 0x75a7af44fe0117b1f5ff11eddad11fe1e0d34189 matches contracts/ (5929 bytes)
 ```
+
+The script needs Foundry and `jq`. The [bytecode workflow](.github/workflows/bytecode.yml) runs the same check every day, so the badge above reflects what is on-chain today.
 
 ## Develop
 
@@ -106,7 +108,7 @@ cd protocol && npm run dev:stack     # local chain + contract + verifier + a fun
 
 ## Security
 
-Cases are untrusted code. The verifier runs them as an unprivileged user with no shell, file or network access and none of the operator's environment. Failure traces can be working exploits, so they are encrypted to the sponsor's key and never published. Report vulnerabilities privately to [@probecli](https://x.com/probecli).
+Cases are untrusted code. The verifier runs them as an unprivileged user with no shell, file or network access and none of the operator's environment. Failure traces can be working exploits, so they are encrypted to the sponsor's key and never published. See [SECURITY.md](SECURITY.md) for scope and how to report a vulnerability privately.
 
 <br>
 
