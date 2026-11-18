@@ -7,6 +7,7 @@
   <a href="https://robinhoodchain.blockscout.com/address/0x75a7af44fe0117b1f5ff11eddad11fe1e0d34189"><img src="https://img.shields.io/badge/ProbeJobs-0x75a7…4189-e83f28?style=flat-square&labelColor=141413" alt="ProbeJobs contract"></a>
   <a href="https://github.com/probecli/probe/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/probecli/probe/ci.yml?branch=main&style=flat-square&label=tests&labelColor=141413" alt="Tests"></a>
   <a href="https://github.com/probecli/probe/actions/workflows/bytecode.yml"><img src="https://img.shields.io/github/actions/workflow/status/probecli/probe/bytecode.yml?branch=main&style=flat-square&label=deployed%20bytecode&labelColor=141413" alt="Deployed bytecode matches source"></a>
+  <a href="https://repo.sourcify.dev/4663/0x75a7af44fe0117b1f5ff11eddad11fe1e0d34189"><img src="https://img.shields.io/badge/sourcify-exact_match-2B50AA?style=flat-square&labelColor=141413" alt="Verified on Sourcify, exact match"></a>
   <img src="https://img.shields.io/badge/solidity-0.8.26-141413?style=flat-square&logo=solidity" alt="Solidity 0.8.26">
   <img src="https://img.shields.io/badge/node-22.18%2B-141413?style=flat-square&logo=nodedotjs" alt="Node 22.18+">
   <a href="https://probecli.com"><img src="https://img.shields.io/badge/probecli.com-141413?style=flat-square" alt="Website"></a>
@@ -81,7 +82,7 @@ If `npm link` fails with a permissions error, use `alias probe="node $PWD/bin/pr
 | ProbeJobs | [`0x75a7af44fe0117b1f5ff11eddad11fe1e0d34189`](https://robinhoodchain.blockscout.com/address/0x75a7af44fe0117b1f5ff11eddad11fe1e0d34189) |
 | Verifier | [`verifier.probecli.com`](https://verifier.probecli.com) · `0xd3c30efc0b0867963193c1d2dfd9fe31a442d746` |
 | Owner | `0xfdbf67fbf0d089212189d9b35546962100a0b764` |
-| Source | Verified on Sourcify, exact match |
+| Source | [Verified on Sourcify](https://repo.sourcify.dev/4663/0x75a7af44fe0117b1f5ff11eddad11fe1e0d34189), exact match |
 | First paid job | Job 1 funded with 0.002 ETH ([tx](https://robinhoodchain.blockscout.com/tx/0xeb8b6baaeca17c008e19fbaf96dfa528b1a0b2157381a6b83c20c20da33a38f1)); one case accepted and paid 0.0002 ETH ([tx](https://robinhoodchain.blockscout.com/tx/0x1bd71402396b9c4ddb6e01a023c4f8b0ca9da0c4864a60551e65f951371c08f0)); operator withdrew it ([tx](https://robinhoodchain.blockscout.com/tx/0x3cff2fe1ddcdfb6541faf89cdd9d23b72dd995ca29593926c9d7ad1626d3f5b2)) |
 
 Deployment, approval and first-job transactions: [`deployments/robinhood-chain.json`](deployments/robinhood-chain.json). The first job was funded by the PROBE team to run the full loop on mainnet; see it at [probecli.com/jobs/scheduled-exit-fee-withdrawals](https://probecli.com/jobs/scheduled-exit-fee-withdrawals).
