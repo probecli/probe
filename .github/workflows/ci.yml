@@ -1,0 +1,36 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  contracts:
+    name: contracts (forge test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: foundry-rs/foundry-toolchain@v1
+      - run: forge test -vv
+        working-directory: contracts
+
+  protocol:
+    name: protocol (typecheck, unit tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.18
+          cache: npm
+          cache-dependency-path: protocol/package-lock.json
+      - run: npm ci
+        working-directory: protocol
+      - run: npm run typecheck
+        working-directory: protocol
+      - run: npm test
+        working-directory: protocol
