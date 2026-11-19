@@ -46,6 +46,9 @@ Sponsor
                        [--eligibility-token <addr> --min-holding <amount>]
   probe sponsor reports <job>         Download and decrypt private failure reports
 
+Other
+  probe --version                     Print the CLI version
+
 Environment: PROBE_VERIFIER_URL, PROBE_OPERATOR_KEY, PROBE_SPONSOR_KEY, ANTHROPIC_API_KEY, PROBE_HOME
 `;
 
@@ -524,7 +527,10 @@ const commands: Record<string, (a: string[]) => Promise<void>> = {
   },
 };
 
-if (!cmd || cmd === "help" || cmd === "--help" || cmd === "-h") {
+if (cmd === "--version" || cmd === "-v" || cmd === "version") {
+  const pkg = JSON.parse(readFileSync(new URL("../../package.json", import.meta.url), "utf8")) as { version: string };
+  console.log(`probe ${pkg.version}`);
+} else if (!cmd || cmd === "help" || cmd === "--help" || cmd === "-h") {
   console.log(HELP);
 } else if (!commands[cmd]) {
   fail(`Unknown command ${cmd}. Run probe help.`);

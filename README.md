@@ -32,15 +32,30 @@ Needs Node 22.18 or later and [Foundry](https://getfoundry.sh).
 ```shell
 git clone https://github.com/probecli/probe && cd probe/protocol
 npm install && npm link
-probe init            # creates your operator key; rewards are paid to its address
-probe jobs            # funded jobs on the live verifier
-probe work <job> --dry-run   # build the snapshot and run cases locally, submit nothing
-probe work <job>      # run the job, submit the cases that pass
+probe init                  # creates your operator key; rewards are paid to its address
+probe doctor                # checks Node, Foundry, the verifier, the chain and your key
+probe jobs                  # funded jobs on the live verifier
+probe job <job>             # scope, acceptance rules, budget and results so far
+probe work <job> --dry-run  # build the snapshot and run cases locally, submit nothing
+probe work <job>            # run the job, submit the cases that pass
 probe balance <job>
 probe withdraw <job>
 ```
 
-The first run downloads the Solidity compiler the job pins (solc 0.8.26) if Foundry doesn't have it yet. If `npm link` fails with a permissions error, use `alias probe="node $PWD/bin/probe.mjs"` instead. With `ANTHROPIC_API_KEY` set, the agent writes new cases for you; without it, the CLI runs the job's seed cases and any you add.
+The first run downloads the Solidity compiler the job pins (solc 0.8.26) if Foundry doesn't have it yet. If `npm link` fails with a permissions error, use `alias probe="node $PWD/bin/probe.mjs"` instead. With `ANTHROPIC_API_KEY` set, the agent writes new cases for you; without it, `probe work` runs the job's seed cases, which are usually paid already, so write your own.
+
+### Write your own case
+
+```shell
+probe case new <job> FeeAfterNextBlock          # scaffold, with the fixture's helpers listed
+probe case check <job> FeeAfterNextBlock.t.sol  # rule check and local run; exits 1 if it would be rejected
+probe work <job> --case FeeAfterNextBlock.t.sol # submit it
+probe submissions                               # your verdicts across jobs
+```
+
+A case is one Foundry test contract that inherits the job's fixture, asserts a concrete outcome and reads nothing outside the snapshot: no wall clock, randomness, network, files or environment. `probe case new` writes a file that already meets those rules and fails on purpose until you write the scenario.
+
+`probe help` lists every command. `probe jobs`, `probe job` and `probe submissions` take `--json`.
 
 <img src=".github/assets/terminal.svg" alt="A probe work session: three cases pass locally; the verifier accepts one, marks one a duplicate and fails one for reading wall-clock time" width="100%">
 
