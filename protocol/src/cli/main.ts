@@ -5,7 +5,7 @@ import { parseUnits, toHex, type PublicClient } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { erc20Abi, formatUnitsShort, probeJobsAbi, publicClient, readJob, revertName, walletClient, ZERO_ADDRESS } from "../shared/chain.ts";
 import { checkCase, caseTitle } from "../shared/rules.ts";
-import { forgeBin, forgeTest, prepareWorkspace, run, resolveWorkspacePath, shortFp } from "../shared/forge.ts";
+import { buildWorkspace, forgeInstalled, forgeTest, prepareWorkspace, run, resolveWorkspacePath, shortFp } from "../shared/forge.ts";
 import { generateReportKeyPair, open, type SealedReport } from "../shared/crypto.ts";
 import { registrationMessage, reportsMessage, sourceHash, submissionMessage } from "../shared/messages.ts";
 import { specHash, validateSpec, type JobSpec, type RegisteredJob } from "../shared/spec.ts";
@@ -179,11 +179,14 @@ async function work(args: string[]) {
   if (account) field("operator", account.address);
   if (job.state.status !== "open") fail("This job is closed.");
   console.log("");
+  if (!(await forgeInstalled())) {
+    fail("Foundry is not installed. Install it with: curl -L https://foundry.paradigm.xyz | bash && foundryup, then run this again.");
+  }
 
   const ws = await task(`Preparing workspace ${dim(job.snapshot.id)}`, () => localWorkspace(job), () => "ok");
   await task("Compiling the snapshot", async () => {
-    const r = await run(forgeBin(), ["build", "--offline"], { cwd: ws, timeoutMs: 600_000 });
-    if (r.code !== 0) throw new Error("the job workspace does not compile");
+    const b = await buildWorkspace(ws);
+    if (!b.ok) throw new Error(`the job workspace does not compile: ${b.error}`);
   }, () => "ok");
 
   const useAgent = values["no-agent"] ? false : values.agent ? true : agentAvailable();

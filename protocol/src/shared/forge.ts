@@ -48,7 +48,29 @@ export function run(cmd: string, args: string[], opts: { cwd: string; timeoutMs?
   });
 }
 
-export const stripAnsi = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, "");
+/** True when a forge binary can be started. */
+export async function forgeInstalled(): Promise<boolean> {
+  const r = await run(forgeBin(), ["--version"], { cwd: process.cwd(), timeoutMs: 30_000 });
+  return r.code === 0;
+}
+
+/**
+ * Build a job workspace. Builds offline first; if the pinned solc version is
+ * not installed yet (a fresh machine), builds once online so forge can fetch
+ * it. Later runs, including every case, stay offline.
+ */
+export async function buildWorkspace(ws: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  let r = await run(forgeBin(), ["build", "--offline"], { cwd: ws, timeoutMs: 600_000 });
+  if (r.code !== 0 && /missing solc|offline mode/i.test(r.stderr + r.stdout)) {
+    r = await run(forgeBin(), ["build"], { cwd: ws, timeoutMs: 600_000 });
+  }
+  if (r.code === 0) return { ok: true };
+  const out = stripAnsi(r.stderr || r.stdout);
+  const error = out.split("\n").find((l) => /^error|Error:/i.test(l.trim()))?.trim() ?? out.trim().split("\n").slice(-1)[0] ?? "forge build failed";
+  return { ok: false, error };
+}
+
+export const stripAnsi =(s: string) => s.replace(/\x1b\[[0-9;]*m/g, "");
 
 /**
  * Copy a job workspace to an isolated directory so each party (CLI, verifier)
