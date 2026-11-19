@@ -1,16 +1,18 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { parseArgs } from "node:util";
-import { parseUnits, toHex, type PublicClient } from "viem";
+import { parseUnits, toHex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { erc20Abi, formatUnitsShort, probeJobsAbi, publicClient, readJob, revertName, walletClient, ZERO_ADDRESS } from "../shared/chain.ts";
-import { checkCase, caseTitle } from "../shared/rules.ts";
-import { buildWorkspace, forgeInstalled, forgeTest, prepareWorkspace, run, resolveWorkspacePath, shortFp } from "../shared/forge.ts";
+import { checkCase } from "../shared/rules.ts";
+import { buildWorkspace, forgeInstalled, shortFp } from "../shared/forge.ts";
 import { generateReportKeyPair, open, type SealedReport } from "../shared/crypto.ts";
 import { registrationMessage, reportsMessage, sourceHash, submissionMessage } from "../shared/messages.ts";
-import { specHash, validateSpec, type JobSpec, type RegisteredJob } from "../shared/spec.ts";
+import { specHash, validateSpec } from "../shared/spec.ts";
 import type { JobView, PublicSubmission } from "../shared/api.ts";
-import { configPath, loadConfig, newOperatorKey, PROBE_HOME, REPO_ROOT, saveConfig } from "./config.ts";
+import { configPath, loadConfig, newOperatorKey, PROBE_HOME, saveConfig } from "./config.ts";
+import { api, clientFor, operator } from "./client.ts";
+import { localWorkspace, runLocal, seedCases } from "./workspace.ts";
 import { agentAvailable, AGENT_MODEL, proposeCases, repairCase, type AgentContext, type ProposedCase } from "./agent.ts";
 import { bold, dim, fail, field, hot, note, payout, prompt, task, verdictLine } from "./ui.ts";
 
@@ -37,35 +39,6 @@ Sponsor
 
 Environment: PROBE_VERIFIER_URL, PROBE_OPERATOR_KEY, PROBE_SPONSOR_KEY, ANTHROPIC_API_KEY, PROBE_HOME
 `;
-
-// ------------------------------------------------------------------ http
-
-async function api<T>(path: string, init?: { method?: string; body?: unknown }): Promise<T> {
-  const cfg = loadConfig();
-  let res: Response;
-  try {
-    res = await fetch(`${cfg.verifierUrl}${path}`, {
-      method: init?.method ?? "GET",
-      headers: init?.body ? { "content-type": "application/json" } : undefined,
-      body: init?.body ? JSON.stringify(init.body) : undefined,
-    });
-  } catch {
-    throw new Error(`cannot reach the verifier at ${cfg.verifierUrl}. Set it with probe init --verifier <url>.`);
-  }
-  const body = (await res.json().catch(() => ({}))) as T & { error?: string };
-  if (!res.ok) throw new Error(body.error ?? `verifier returned HTTP ${res.status}`);
-  return body;
-}
-
-function operator() {
-  const key = loadConfig().operatorKey;
-  if (!key) fail("No operator key. Run probe init first.");
-  return privateKeyToAccount(key);
-}
-
-function clientFor(job: RegisteredJob): PublicClient {
-  return publicClient(job.chain.rpcUrl, job.chain.chainId);
-}
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -104,51 +77,6 @@ async function jobs() {
         `${formatUnitsShort(BigInt(j.state.rewardPerAccepted), d)} ${j.chain.rewardSymbol} per accepted case, ${formatUnitsShort(BigInt(j.state.budget), d)} ${j.chain.rewardSymbol} left, ${j.state.accepted} accepted, ${j.state.status}`,
       )}`,
     );
-  }
-}
-
-/** Workspace copy for local runs. */
-async function localWorkspace(job: RegisteredJob): Promise<string> {
-  let src: string;
-  if (job.workspace.path) {
-    src = resolveWorkspacePath(REPO_ROOT, job.workspace.path);
-    if (!existsSync(join(src, "foundry.toml"))) throw new Error(`workspace ${job.workspace.path} not found under ${REPO_ROOT}. Set PROBE_REPO_ROOT.`);
-  } else {
-    src = join(PROBE_HOME, "src", job.slug);
-    if (!existsSync(join(src, ".git"))) {
-      const r = await run("git", ["clone", "--recurse-submodules", job.workspace.git!, src], { cwd: PROBE_HOME, timeoutMs: 600_000, env: process.env });
-      if (r.code !== 0) throw new Error(`git clone failed: ${r.stderr.slice(0, 300)}`);
-    }
-    await run("git", ["checkout", "--quiet", job.workspace.commit!], { cwd: src, env: process.env });
-    await run("git", ["submodule", "update", "--init", "--recursive"], { cwd: src, timeoutMs: 600_000, env: process.env });
-  }
-  return prepareWorkspace(src, join(PROBE_HOME, "work", job.slug));
-}
-
-function seedCases(ws: string, job: JobSpec): ProposedCase[] {
-  if (!job.seedCases) return [];
-  const dir = join(ws, job.seedCases);
-  if (!existsSync(dir)) return [];
-  return readdirSync(dir)
-    .filter((f) => f.endsWith(".sol"))
-    .sort()
-    .map((f) => {
-      const source = readFileSync(join(dir, f), "utf8");
-      const name = f.replace(/\.t\.sol$|\.sol$/, "");
-      return { name, title: caseTitle(source, name), source };
-    });
-}
-
-async function runLocal(ws: string, c: ProposedCase) {
-  const dir = join(ws, "test/cases");
-  mkdirSync(dir, { recursive: true });
-  for (const f of readdirSync(dir)) rmSync(join(dir, f), { force: true });
-  const rel = `test/cases/${c.name.replace(/[^A-Za-z0-9_]/g, "")}.t.sol`;
-  writeFileSync(join(ws, rel), c.source);
-  try {
-    return await forgeTest(ws, rel, 1);
-  } finally {
-    rmSync(join(ws, rel), { force: true });
   }
 }
 
