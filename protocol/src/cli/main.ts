@@ -14,6 +14,7 @@ import { configPath, loadConfig, newOperatorKey, PROBE_HOME, saveConfig } from "
 import { api, clientFor, operator } from "./client.ts";
 import { localWorkspace, runLocal, seedCases } from "./workspace.ts";
 import { caseName, caseTemplate, fixtureHelpers, loadCaseFiles } from "./cases.ts";
+import { deadlineText, printJson, resultCounts } from "./format.ts";
 import { agentAvailable, AGENT_MODEL, proposeCases, repairCase, type AgentContext, type ProposedCase } from "./agent.ts";
 import { bold, dim, fail, field, hot, note, payout, prompt, task, verdictLine } from "./ui.ts";
 
@@ -22,7 +23,8 @@ const HELP = `${bold("probe")}: test Uniswap v4 hooks, get paid for verified wor
 Operator
   probe init [--verifier <url>]       Create an operator key and save settings
   probe whoami                        Show your operator address and verifier
-  probe jobs                          List jobs on the verifier
+  probe jobs [--json]                 List jobs on the verifier
+  probe job <job> [--json]            Show a job's scope, rules, budget and results
   probe work <job> [options]          Run a job and submit what passes
       --agent / --no-agent            Use the AI agent (default: when credentials exist)
       --cases <n>                     Number of cases to ask the agent for (default 3)
@@ -71,8 +73,10 @@ async function whoami() {
   console.log(`${dim("agent   ")} ${agentAvailable() ? `${AGENT_MODEL} (credentials found)` : "no credentials; seed cases only"}`);
 }
 
-async function jobs() {
+async function jobs(args: string[]) {
+  const { values } = parseArgs({ args, options: { json: { type: "boolean" } } });
   const list = await api<JobView[]>("/jobs");
+  if (values.json) return printJson(list);
   if (!list.length) return note("No jobs registered on this verifier yet.");
   for (const j of list) {
     const d = j.chain.rewardDecimals;
@@ -205,6 +209,51 @@ async function work(args: string[]) {
   } else {
     note("No case was accepted this run. Read the verdicts above, then try a different path.");
   }
+}
+
+async function job(args: string[]) {
+  const { values, positionals } = parseArgs({ args, allowPositionals: true, options: { json: { type: "boolean" } } });
+  const slug = positionals[0];
+  if (!slug) fail("Usage: probe job <job> [--json]");
+  const [j, subs] = await Promise.all([
+    api<JobView>(`/jobs/${slug}`),
+    api<PublicSubmission[]>(`/jobs/${slug}/submissions`).catch(() => [] as PublicSubmission[]),
+  ]);
+  if (values.json) return printJson({ ...j, submissions: subs });
+
+  const d = j.chain.rewardDecimals;
+  const sym = j.chain.rewardSymbol;
+  const amount = (v: string) => `${formatUnitsShort(BigInt(v), d)} ${sym}`;
+  const explorer = j.chain.explorerUrl?.replace(/\/$/, "");
+  console.log(`${j.state.status === "open" ? hot("●") : dim("○")} ${bold(j.title)} ${dim(`(${j.state.status})`)}`);
+  console.log(`  ${j.summary}\n`);
+  field("chain", `${j.network.name} (chain ${j.chain.chainId}), job #${j.chain.jobId}`);
+  field("contract", explorer ? `${j.chain.contract} ${dim(`${explorer}/address/${j.chain.contract}`)}` : j.chain.contract);
+  field("hook", `${j.hook.name} (${j.hook.callbacks.join(", ")})`);
+  field("snapshot", `${j.snapshot.id}, block ${j.snapshot.block.toLocaleString("en-US")}`);
+  field("pays for", j.rewardModel.replace(/-/g, " "));
+  field("reward", `${amount(j.state.rewardPerAccepted)} per accepted case`);
+  field("budget", `${amount(j.state.budget)} left of ${amount(j.state.funded)} funded, ${j.state.accepted} accepted`);
+  field("deadline", deadlineText(j.state.deadline));
+  if (BigInt(j.state.minHolding) > 0n) field("eligible", `hold at least ${j.state.minHolding} of ${j.state.eligibilityToken}`);
+  field("sponsor", `${j.sponsor} ${dim(j.state.sponsor)}`);
+
+  console.log(`\n${bold("Objective")}\n  ${j.objective}`);
+  console.log(`\n${bold("In scope")}`);
+  for (const x of j.inScope) console.log(`  ${dim("·")} ${x}`);
+  console.log(`\n${bold("Out of scope")}`);
+  for (const x of j.outOfScope) console.log(`  ${dim("·")} ${x}`);
+  console.log(`\n${bold("Acceptance rules")}`);
+  j.acceptanceRules.forEach((r, i) => console.log(`  ${dim(`${i + 1}.`)} ${r}`));
+
+  console.log(`\n${bold("Results")}`);
+  const counts = resultCounts(subs);
+  if (!counts.length) console.log(`  ${dim("No submissions yet.")}`);
+  else console.log(`  ${counts.map((c) => `${c.count} ${c.verdict}`).join(", ")}`);
+  for (const s of subs.filter((s) => s.verdict === "accepted")) {
+    console.log(`  ${hot("✓")} ${s.title} ${dim(`${s.reward ?? ""}${s.txHash && explorer ? ` ${explorer}/tx/${s.txHash}` : ""}`)}`);
+  }
+  if (j.state.status === "open") note(`\nRun it: probe work ${slug}    Write your own case: probe case new ${slug} <Name>`);
 }
 
 /** Build the job's workspace, checking for Foundry first. */
@@ -428,6 +477,7 @@ const commands: Record<string, (a: string[]) => Promise<void>> = {
   init,
   whoami,
   jobs,
+  job,
   work,
   status,
   balance,

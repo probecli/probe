@@ -149,3 +149,29 @@ test("a new case meets the job's rules before it is written", () => {
   assert.match(src, /scheduleFee\(uint24 fee\)/);
   assert.equal(contractNameOf(src), "TwoBlockExit");
 });
+
+// ------------------------------------------------------------ job details
+
+import { deadlineText, resultCounts } from "../src/cli/format.ts";
+
+test("describes a deadline relative to now", () => {
+  const now = Date.UTC(2026, 10, 19, 12);
+  assert.equal(deadlineText(now / 1000 + 30 * 86400, now), "in 30 days (2026-12-19)");
+  assert.equal(deadlineText(now / 1000 + 5 * 3600, now), "in 5 hours (2026-11-19)");
+  assert.equal(deadlineText(now / 1000 + 600, now), "in 1 hour (2026-11-19)");
+  assert.equal(deadlineText(now / 1000 - 1, now), "passed (2026-11-19)");
+});
+
+test("counts verdicts, most important first, with unfinished ones as pending", () => {
+  const subs = [
+    { status: "done", verdict: "duplicate" },
+    { status: "running", verdict: null },
+    { status: "done", verdict: "accepted" },
+    { status: "done", verdict: "duplicate" },
+  ] as const;
+  assert.deepEqual(resultCounts([...subs]), [
+    { verdict: "accepted", count: 1 },
+    { verdict: "duplicate", count: 2 },
+    { verdict: "pending", count: 1 },
+  ]);
+});
