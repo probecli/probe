@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { parseArgs } from "node:util";
 import { parseUnits, toHex } from "viem";
@@ -13,6 +13,7 @@ import type { JobView, PublicSubmission } from "../shared/api.ts";
 import { configPath, loadConfig, newOperatorKey, PROBE_HOME, saveConfig } from "./config.ts";
 import { api, clientFor, operator } from "./client.ts";
 import { localWorkspace, runLocal, seedCases } from "./workspace.ts";
+import { caseName, caseTemplate, fixtureHelpers, loadCaseFiles } from "./cases.ts";
 import { agentAvailable, AGENT_MODEL, proposeCases, repairCase, type AgentContext, type ProposedCase } from "./agent.ts";
 import { bold, dim, fail, field, hot, note, payout, prompt, task, verdictLine } from "./ui.ts";
 
@@ -26,7 +27,10 @@ Operator
       --agent / --no-agent            Use the AI agent (default: when credentials exist)
       --cases <n>                     Number of cases to ask the agent for (default 3)
       --dry-run                       Run locally, submit nothing
+      --case <file>                   Run your own case file instead (repeat for more)
       --submit-all                    Also submit cases that break a rule (the verifier will reject them)
+  probe case new <job> <Name>         Write a new case for a job, with the fixture's helpers listed
+  probe case check <job> <file...>    Check cases against the job's rules and run them locally
   probe status <submission-id>        Show a submission's verdict
   probe balance <job>                 Show what you are owed on a job's reward token
   probe withdraw <job>                Withdraw what you are owed
@@ -90,10 +94,13 @@ async function work(args: string[]) {
       cases: { type: "string", default: "3" },
       "dry-run": { type: "boolean" },
       "submit-all": { type: "boolean" },
+      case: { type: "string", multiple: true },
     },
   });
   const slug = positionals[0];
   if (!slug) fail("Usage: probe work <job>");
+  const own = values.case ?? [];
+  for (const f of own) if (!existsSync(f)) fail(`No case file at ${f}.`);
   const account = values["dry-run"] ? null : operator();
 
   console.log(`${prompt()} probe work ${slug}`);
@@ -107,17 +114,10 @@ async function work(args: string[]) {
   if (account) field("operator", account.address);
   if (job.state.status !== "open") fail("This job is closed.");
   console.log("");
-  if (!(await forgeInstalled())) {
-    fail("Foundry is not installed. Install it with: curl -L https://foundry.paradigm.xyz | bash && foundryup, then run this again.");
-  }
 
-  const ws = await task(`Preparing workspace ${dim(job.snapshot.id)}`, () => localWorkspace(job), () => "ok");
-  await task("Compiling the snapshot", async () => {
-    const b = await buildWorkspace(ws);
-    if (!b.ok) throw new Error(`the job workspace does not compile: ${b.error}`);
-  }, () => "ok");
+  const ws = await prepare(job);
 
-  const useAgent = values["no-agent"] ? false : values.agent ? true : agentAvailable();
+  const useAgent = own.length ? false : values["no-agent"] ? false : values.agent ? true : agentAvailable();
   let cases: ProposedCase[];
   let ctx: AgentContext | null = null;
   if (useAgent) {
@@ -131,9 +131,13 @@ async function work(args: string[]) {
     };
     const n = Math.max(1, Math.min(8, Number(values.cases) || 3));
     cases = await task(`Agent proposing cases for ${job.hook.callbacks.at(-1)} ${dim(`(${AGENT_MODEL})`)}`, () => proposeCases(ctx!, n), (v) => `${v.length} cases`);
+  } else if (own.length) {
+    cases = loadCaseFiles(own);
+    note(`  Running ${cases.length} case${cases.length === 1 ? "" : "s"} from your files.`);
   } else {
     cases = seedCases(ws, job);
     note(`  No AI agent configured (set ANTHROPIC_API_KEY or run ant auth login). Using ${cases.length} seed cases from the job.`);
+    note(`  Seed cases may already be paid. Write your own with: probe case new ${slug} <Name>`);
   }
   if (!cases.length) fail("No cases to run.");
 
@@ -161,8 +165,7 @@ async function work(args: string[]) {
       console.log(`${dim("·")} ${label} ${dim(`${ran?.passed ? "passed locally, " : ""}breaks a rule: ${rules.reason}`)}`);
       if (values["submit-all"] && ran?.passed) toSubmit.push(c);
     } else {
-      const why = local?.compileError ? "does not compile" : local?.tests.filter((t) => !t.passed).map((t) => t.name).join(", ") + " failed";
-      console.log(`${dim("·")} ${label} ${dim(`failed locally: ${why}`)}`);
+      console.log(`${dim("·")} ${label} ${dim(`failed locally: ${localFailure(local)}`)}`);
     }
   }
 
@@ -202,6 +205,74 @@ async function work(args: string[]) {
   } else {
     note("No case was accepted this run. Read the verdicts above, then try a different path.");
   }
+}
+
+/** Build the job's workspace, checking for Foundry first. */
+async function prepare(job: JobView): Promise<string> {
+  if (!(await forgeInstalled())) {
+    fail("Foundry is not installed. Install it with: curl -L https://foundry.paradigm.xyz | bash && foundryup, then run this again.");
+  }
+  const ws = await task(`Preparing workspace ${dim(job.snapshot.id)}`, () => localWorkspace(job), () => "ok");
+  await task("Compiling the snapshot", async () => {
+    const b = await buildWorkspace(ws);
+    if (!b.ok) throw new Error(`the job workspace does not compile: ${b.error}`);
+  }, () => "ok");
+  return ws;
+}
+
+/** Why a local run failed, in one line. */
+function localFailure(local: Awaited<ReturnType<typeof runLocal>> | null): string {
+  if (!local) return "did not run";
+  if (local.timedOut) return "timed out";
+  if (local.compileError) return `does not compile: ${local.compileError.split("\n").find((l) => /error/i.test(l))?.trim() ?? "see forge output"}`;
+  const failed = local.tests.filter((t) => !t.passed);
+  return failed.map((t) => `${t.name}${t.reason ? ` (${t.reason})` : ""}`).join(", ") || "no tests ran";
+}
+
+async function caseNew(args: string[]) {
+  const { values, positionals } = parseArgs({ args, allowPositionals: true, options: { out: { type: "string", default: "." } } });
+  const [slug, raw] = positionals;
+  if (!slug || !raw) fail("Usage: probe case new <job> <Name> [--out <dir>]");
+  const name = caseName(raw);
+  const file = resolve(values.out!, `${name}.t.sol`);
+  if (existsSync(file)) fail(`${file} already exists.`);
+  const job = await api<JobView>(`/jobs/${slug}`);
+  const ws = await task(`Preparing workspace ${dim(job.snapshot.id)}`, () => localWorkspace(job), () => "ok");
+  const fixture = resolve(ws, "test/cases", job.fixture.import);
+  const helpers = existsSync(fixture) ? fixtureHelpers(readFileSync(fixture, "utf8")) : [];
+  mkdirSync(values.out!, { recursive: true });
+  writeFileSync(file, caseTemplate(job, name, helpers));
+  console.log(`${prompt()} Wrote ${bold(file)}`);
+  note(`  It inherits ${job.fixture.base}, the job snapshot. Fixture source: ${fixture}`);
+  note(`  Replace the TODOs, then:`);
+  note(`    probe case check ${slug} ${file}`);
+  note(`    probe work ${slug} --case ${file}`);
+}
+
+async function caseCheck(args: string[]) {
+  const [slug, ...files] = args;
+  if (!slug || !files.length) fail("Usage: probe case check <job> <file...>");
+  for (const f of files) if (!existsSync(f)) fail(`No case file at ${f}.`);
+  const job = await api<JobView>(`/jobs/${slug}`);
+  const ws = await prepare(job);
+  let ok = 0;
+  for (const c of loadCaseFiles(files)) {
+    const rules = checkCase(c.source, job);
+    if (!rules.ok) {
+      console.log(`${hot("×")} ${c.title} ${dim(`breaks a rule: ${rules.reason}`)}`);
+      continue;
+    }
+    const local = await runLocal(ws, c);
+    if (local.passed) {
+      ok++;
+      console.log(`${dim("✓")} ${c.title} ${dim(`follows the rules and passes locally (${rules.testCount} test${rules.testCount === 1 ? "" : "s"})`)}`);
+    } else {
+      console.log(`${hot("×")} ${c.title} ${dim(`follows the rules, fails locally: ${localFailure(local)}`)}`);
+    }
+  }
+  console.log("");
+  if (ok === files.length) note(`Ready to submit: probe work ${slug} ${files.map((f) => `--case ${f}`).join(" ")}`);
+  else process.exitCode = 1;
 }
 
 async function status(args: string[]) {
@@ -361,6 +432,12 @@ const commands: Record<string, (a: string[]) => Promise<void>> = {
   status,
   balance,
   withdraw,
+  case: async (a) => {
+    const [sub, ...r] = a;
+    if (sub === "new") return caseNew(r);
+    if (sub === "check") return caseCheck(r);
+    fail("Usage: probe case new <job> <Name> | probe case check <job> <file...>");
+  },
   sponsor: async (a) => {
     const [sub, ...r] = a;
     if (sub === "keygen") return sponsorKeygen();

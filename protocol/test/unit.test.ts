@@ -115,3 +115,37 @@ test("workspace copies are sandboxed even if the job enables ffi", () => {
   assert.doesNotMatch(toml, /read-write|eth_rpc_url/);
   assert.match(toml, new RegExp(`"${join(root, "lib").replace(/[/\\]/g, "\\/")}"`));
 });
+
+// ------------------------------------------------------------ operator-written cases
+
+import { caseName, caseTemplate, fixtureHelpers } from "../src/cli/cases.ts";
+
+const realFixture = readFileSync(new URL("../../jobs/scheduled-exit-fee/test/ProbeCase.sol", import.meta.url), "utf8");
+const realJob = JSON.parse(readFileSync(new URL("../../jobs/scheduled-exit-fee/job.json", import.meta.url), "utf8"));
+
+test("lists the fixture's helpers, not setUp", () => {
+  const helpers = fixtureHelpers(realFixture);
+  assert.deepEqual(
+    helpers.map((h) => h.signature.split("(")[0]),
+    ["scheduleFee", "nextBlock", "withdraw", "hookBalance0"],
+  );
+  const withdraw = helpers.find((h) => h.signature.startsWith("withdraw"))!;
+  assert.equal(withdraw.signature, "withdraw(int256 liquidity) returns (uint256 received0, uint256 received1)");
+  assert.equal(withdraw.doc, "Token amounts the LP received.");
+});
+
+test("turns typed names into Solidity identifiers", () => {
+  assert.equal(caseName("fee spike withdraw"), "FeeSpikeWithdraw");
+  assert.equal(caseName("TwoBlockExit.t.sol"), "TwoBlockExit");
+  assert.throws(() => caseName("9lives"), /not a usable case name/);
+  assert.throws(() => caseName("---"), /not a usable case name/);
+});
+
+test("a new case meets the job's rules before it is written", () => {
+  const src = caseTemplate(realJob, "TwoBlockExit", fixtureHelpers(realFixture));
+  const r = checkCase(src, realJob);
+  assert.equal(r.ok, true, r.ok ? "" : r.reason);
+  assert.match(src, /contract TwoBlockExit is ProbeCase/);
+  assert.match(src, /scheduleFee\(uint24 fee\)/);
+  assert.equal(contractNameOf(src), "TwoBlockExit");
+});
