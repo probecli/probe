@@ -8,7 +8,7 @@
     "setVerifierTx": "0xba52a5da148e040b05be556cd72eeb0703f6291f89b096062079f3d8dbe62381",
     "owner": "0xfdbf67fbf0d089212189d9b35546962100a0b764",
     "verifier": "0xd3c30efc0b0867963193c1d2dfd9fe31a442d746",
-    "sponsor": "0xf6cd1140783d65e2bd7ff361a84957f77b8cffbe",
+    "sponsor": "0xfdbf67fbf0d089212189d9b35546962100a0b764",
     "sourceVerified": "sourcify exact_match",
     "firstJob": {
       "jobId": 1,
@@ -19,7 +19,10 @@
       "createTx": "0xeb8b6baaeca17c008e19fbaf96dfa528b1a0b2157381a6b83c20c20da33a38f1",
       "settleTx": "0x1bd71402396b9c4ddb6e01a023c4f8b0ca9da0c4864a60551e65f951371c08f0",
       "withdrawTx": "0x3cff2fe1ddcdfb6541faf89cdd9d23b72dd995ca29593926c9d7ad1626d3f5b2",
-      "operator": "0x339dC9B187cE890FD1c482060880dd1872F68B6D"
+      "operator": "0x339dC9B187cE890FD1c482060880dd1872F68B6D",
+      "spec": "deployments/jobs/1.json",
+      "specHash": "0x7fe8f1c8bd687ab1a99e5a7c7c4dafdc9dca8a669492b8bb9cde1fe60090ddf3",
+      "sponsorNote": "Funded by the PROBE team from the owner wallet to prove the full loop on mainnet."
     }
   },
   "testnet": {
