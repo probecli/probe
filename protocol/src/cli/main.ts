@@ -16,6 +16,7 @@ import { localWorkspace, runLocal, seedCases } from "./workspace.ts";
 import { caseName, caseTemplate, fixtureHelpers, loadCaseFiles } from "./cases.ts";
 import { ago, deadlineText, printJson, resultCounts } from "./format.ts";
 import { doctor } from "./doctor.ts";
+import { check } from "./check.ts";
 import { agentAvailable, AGENT_MODEL, proposeCases, repairCase, type AgentContext, type ProposedCase } from "./agent.ts";
 import { bold, dim, fail, field, hot, note, payout, prompt, task, verdictLine } from "./ui.ts";
 
@@ -40,6 +41,13 @@ Operator
   probe balance <job>                 Show what you are owed on a job's reward token
   probe withdraw <job>                Withdraw what you are owed
 
+Hooks
+  probe check <hook> [options]        Run the standard safety checks on a deployed hook
+      --block <n>                     Check at this block (default: latest)
+      --rpc <url>                     Chain RPC (default: Robinhood Chain mainnet)
+      --publish                       Have the verifier reproduce, sign and publish the result
+      --json                          Print the report as JSON
+
 Sponsor
   probe sponsor keygen                Create your report-decryption key pair
   probe sponsor create --spec <file> --token <addr> --reward <amount> --budget <amount> [--days 14]
@@ -49,7 +57,7 @@ Sponsor
 Other
   probe --version                     Print the CLI version
 
-Environment: PROBE_VERIFIER_URL, PROBE_OPERATOR_KEY, PROBE_SPONSOR_KEY, ANTHROPIC_API_KEY, PROBE_HOME
+Environment: PROBE_VERIFIER_URL, PROBE_RPC_URL, PROBE_OPERATOR_KEY, PROBE_SPONSOR_KEY, ANTHROPIC_API_KEY, PROBE_HOME
 `;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -505,6 +513,7 @@ const commands: Record<string, (a: string[]) => Promise<void>> = {
   init,
   whoami,
   doctor,
+  check,
   jobs,
   job,
   work,
