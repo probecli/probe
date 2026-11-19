@@ -20,4 +20,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: foundry-rs/foundry-toolchain@v1
+        # The toolchain ProbeJobs was deployed with. Newer releases can emit different
+        # bytes for the same source, so this stays pinned.
+        with:
+          version: v1.9.0
       - run: scripts/verify-bytecode.sh
