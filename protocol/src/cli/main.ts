@@ -14,7 +14,7 @@ import { configPath, loadConfig, newOperatorKey, PROBE_HOME, saveConfig } from "
 import { api, clientFor, operator } from "./client.ts";
 import { localWorkspace, runLocal, seedCases } from "./workspace.ts";
 import { caseName, caseTemplate, fixtureHelpers, loadCaseFiles } from "./cases.ts";
-import { deadlineText, printJson, resultCounts } from "./format.ts";
+import { ago, deadlineText, printJson, resultCounts } from "./format.ts";
 import { doctor } from "./doctor.ts";
 import { agentAvailable, AGENT_MODEL, proposeCases, repairCase, type AgentContext, type ProposedCase } from "./agent.ts";
 import { bold, dim, fail, field, hot, note, payout, prompt, task, verdictLine } from "./ui.ts";
@@ -36,6 +36,7 @@ Operator
   probe case new <job> <Name>         Write a new case for a job, with the fixture's helpers listed
   probe case check <job> <file...>    Check cases against the job's rules and run them locally
   probe status <submission-id>        Show a submission's verdict
+  probe submissions [job] [--all]     Your submissions and verdicts, newest first (--all: everyone's)
   probe balance <job>                 Show what you are owed on a job's reward token
   probe withdraw <job>                Withdraw what you are owed
 
@@ -326,6 +327,28 @@ async function caseCheck(args: string[]) {
   else process.exitCode = 1;
 }
 
+async function submissions(args: string[]) {
+  const { values, positionals } = parseArgs({ args, allowPositionals: true, options: { all: { type: "boolean" }, json: { type: "boolean" } } });
+  const key = loadConfig().operatorKey;
+  if (!values.all && !key) fail("No operator key, so no submissions of yours. Run probe init, or pass --all to see everyone's.");
+  const me = key && !values.all ? privateKeyToAccount(key).address.toLowerCase() : null;
+  const slugs = positionals[0] ? [positionals[0]] : (await api<JobView[]>("/jobs")).map((j) => j.slug);
+  const all = (await Promise.all(slugs.map((s) => api<PublicSubmission[]>(`/jobs/${s}/submissions`)))).flat();
+  const list = all.filter((s) => !me || s.operator.toLowerCase() === me).sort((a, b) => b.createdAt - a.createdAt);
+  if (values.json) return printJson(list);
+  if (!list.length) return note(me ? `No submissions from ${me} yet.` : "No submissions yet.");
+  const glyph: Record<string, string> = { accepted: hot("✓"), duplicate: "=", failed: "×", ineligible: "×" };
+  for (const s of list) {
+    const verdict = s.status === "done" ? (s.verdict ?? "failed") : s.status;
+    console.log(`${glyph[verdict] ?? dim("…")} ${s.title} ${dim(`${verdict}, ${ago(s.createdAt)}`)}`);
+    const meta = [s.slug, me ? null : s.operator, s.fingerprint ? `fingerprint ${shortFp(s.fingerprint)}` : null, s.reward, s.id].filter(Boolean).join("  ");
+    console.log(`  ${dim(meta)}`);
+    if (s.reason && s.verdict !== "accepted") console.log(`  ${dim(s.reason)}`);
+  }
+  const counts = resultCounts(list);
+  note(`\n${list.length} submission${list.length === 1 ? "" : "s"}: ${counts.map((c) => `${c.count} ${c.verdict}`).join(", ")}`);
+}
+
 async function status(args: string[]) {
   const id = args[0];
   if (!id) fail("Usage: probe status <submission-id>");
@@ -483,6 +506,7 @@ const commands: Record<string, (a: string[]) => Promise<void>> = {
   job,
   work,
   status,
+  submissions,
   balance,
   withdraw,
   case: async (a) => {

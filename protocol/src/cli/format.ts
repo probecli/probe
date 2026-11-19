@@ -25,3 +25,13 @@ export function resultCounts(subs: Pick<PublicSubmission, "status" | "verdict">[
 export function printJson(value: unknown) {
   console.log(JSON.stringify(value, null, 2));
 }
+
+/** "3m ago", "5h ago", "2d ago", or the date for older times. */
+export function ago(ms: number, nowMs = Date.now()): string {
+  const s = Math.max(0, Math.floor((nowMs - ms) / 1000));
+  if (s < 60) return "just now";
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+  if (s < 86_400) return `${Math.floor(s / 3600)}h ago`;
+  if (s < 30 * 86_400) return `${Math.floor(s / 86_400)}d ago`;
+  return new Date(ms).toISOString().slice(0, 10);
+}

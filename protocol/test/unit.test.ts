@@ -152,7 +152,7 @@ test("a new case meets the job's rules before it is written", () => {
 
 // ------------------------------------------------------------ job details
 
-import { deadlineText, resultCounts } from "../src/cli/format.ts";
+import { ago, deadlineText, resultCounts } from "../src/cli/format.ts";
 
 test("describes a deadline relative to now", () => {
   const now = Date.UTC(2026, 10, 19, 12);
@@ -186,4 +186,13 @@ test("compares tool versions", () => {
   assert.equal(atLeast("22.17.9", MIN_NODE), false);
   assert.equal(atLeast("22.18", "22.18.0"), true);
   assert.equal(atLeast("20.19.0", MIN_NODE), false);
+});
+
+test("says how long ago something happened", () => {
+  const now = Date.UTC(2026, 10, 19, 12);
+  assert.equal(ago(now - 20_000, now), "just now");
+  assert.equal(ago(now - 5 * 60_000, now), "5m ago");
+  assert.equal(ago(now - 3 * 3_600_000, now), "3h ago");
+  assert.equal(ago(now - 2 * 86_400_000, now), "2d ago");
+  assert.equal(ago(Date.UTC(2026, 8, 1), now), "2026-09-01");
 });
