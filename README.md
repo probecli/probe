@@ -8,6 +8,7 @@
   <a href="https://github.com/probecli/probe/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/probecli/probe/ci.yml?branch=main&style=flat-square&label=tests&labelColor=141413" alt="Tests"></a>
   <a href="https://github.com/probecli/probe/actions/workflows/bytecode.yml"><img src="https://img.shields.io/github/actions/workflow/status/probecli/probe/bytecode.yml?branch=main&style=flat-square&label=deployed%20bytecode&labelColor=141413" alt="Deployed bytecode matches source"></a>
   <a href="https://repo.sourcify.dev/4663/0x75a7af44fe0117b1f5ff11eddad11fe1e0d34189"><img src="https://img.shields.io/badge/sourcify-exact_match-2B50AA?style=flat-square&labelColor=141413" alt="Verified on Sourcify, exact match"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-141413?style=flat-square" alt="MIT license"></a>
   <img src="https://img.shields.io/badge/solidity-0.8.26-141413?style=flat-square&logo=solidity" alt="Solidity 0.8.26">
   <img src="https://img.shields.io/badge/node-22.18%2B-141413?style=flat-square&logo=nodedotjs" alt="Node 22.18+">
   <a href="https://probecli.com"><img src="https://img.shields.io/badge/probecli.com-141413?style=flat-square" alt="Website"></a>
@@ -33,12 +34,13 @@ git clone https://github.com/probecli/probe && cd probe/protocol
 npm install && npm link
 probe init            # creates your operator key; rewards are paid to its address
 probe jobs            # funded jobs on the live verifier
+probe work <job> --dry-run   # build the snapshot and run cases locally, submit nothing
 probe work <job>      # run the job, submit the cases that pass
 probe balance <job>
 probe withdraw <job>
 ```
 
-If `npm link` fails with a permissions error, use `alias probe="node $PWD/bin/probe.mjs"` instead. With `ANTHROPIC_API_KEY` set, the agent writes new cases for you; without it, the CLI runs the job's seed cases and any you add.
+The first run downloads the Solidity compiler the job pins (solc 0.8.26) if Foundry doesn't have it yet. If `npm link` fails with a permissions error, use `alias probe="node $PWD/bin/probe.mjs"` instead. With `ANTHROPIC_API_KEY` set, the agent writes new cases for you; without it, the CLI runs the job's seed cases and any you add.
 
 <img src=".github/assets/terminal.svg" alt="A probe work session: three cases pass locally; the verifier accepts one, marks one a duplicate and fails one for reading wall-clock time" width="100%">
 
@@ -111,6 +113,10 @@ cd protocol && npm run dev:stack     # local chain + contract + verifier + a fun
 ## Security
 
 Cases are untrusted code. The verifier runs them as an unprivileged user with no shell, file or network access and none of the operator's environment. Failure traces can be working exploits, so they are encrypted to the sponsor's key and never published. See [SECURITY.md](SECURITY.md) for scope and how to report a vulnerability privately.
+
+## License
+
+[MIT](LICENSE)
 
 <br>
 
