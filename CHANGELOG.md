@@ -2,6 +2,16 @@
 
 Changes to the `probe` CLI and the verifier. The ProbeJobs contract is deployed once and does not change; its address is in [deployments/robinhood-chain.json](deployments/robinhood-chain.json).
 
+## 0.4.0 (2026-11-20)
+
+The CLI is on npm: `npm install -g @probecli/cli`.
+
+### Added
+
+- Published as [`@probecli/cli`](https://www.npmjs.com/package/@probecli/cli), which installs the `probe` command. The package ships a bundled JavaScript build, so it runs from `node_modules` like any other CLI.
+- Jobs whose workspace is a path in this repository now run from an npm install: the CLI keeps a shallow checkout of the public repository in `~/.probe/repo` and refreshes it on each run.
+- CI packs the CLI, installs the tarball globally and runs it on every push.
+
 ## 0.3.0 (2026-11-20)
 
 Hook checks: a free, signed safety check for any deployed Uniswap v4 hook on Robinhood Chain.

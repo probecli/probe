@@ -8,6 +8,7 @@
   <a href="https://github.com/probecli/probe/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/probecli/probe/ci.yml?branch=main&style=flat-square&label=tests&labelColor=141413" alt="Tests"></a>
   <a href="https://github.com/probecli/probe/actions/workflows/bytecode.yml"><img src="https://img.shields.io/github/actions/workflow/status/probecli/probe/bytecode.yml?branch=main&style=flat-square&label=deployed%20bytecode&labelColor=141413" alt="Deployed bytecode matches source"></a>
   <a href="https://repo.sourcify.dev/4663/0x75a7af44fe0117b1f5ff11eddad11fe1e0d34189"><img src="https://img.shields.io/badge/sourcify-exact_match-2B50AA?style=flat-square&labelColor=141413" alt="Verified on Sourcify, exact match"></a>
+  <a href="https://www.npmjs.com/package/@probecli/cli"><img src="https://img.shields.io/npm/v/%40probecli%2Fcli?style=flat-square&label=npm&color=e83f28&labelColor=141413" alt="@probecli/cli on npm"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-141413?style=flat-square" alt="MIT license"></a>
   <img src="https://img.shields.io/badge/solidity-0.8.26-141413?style=flat-square&logo=solidity" alt="Solidity 0.8.26">
   <img src="https://img.shields.io/badge/node-22.18%2B-141413?style=flat-square&logo=nodedotjs" alt="Node 22.18+">
@@ -27,11 +28,10 @@ This repository is everything that touches money or decides what gets paid: the 
 
 ## Quickstart
 
-Needs Node 22.18 or later and [Foundry](https://getfoundry.sh).
+Needs Node 22.18 or later, and [Foundry](https://getfoundry.sh) and git to run jobs.
 
 ```shell
-git clone https://github.com/probecli/probe && cd probe/protocol
-npm install && npm link
+npm install -g @probecli/cli
 probe init                  # creates your operator key; rewards are paid to its address
 probe doctor                # checks Node, Foundry, the verifier, the chain and your key
 probe jobs                  # funded jobs on the live verifier
@@ -42,7 +42,7 @@ probe balance <job>
 probe withdraw <job>
 ```
 
-The first run downloads the Solidity compiler the job pins (solc 0.8.26) if Foundry doesn't have it yet. If `npm link` fails with a permissions error, use `alias probe="node $PWD/bin/probe.mjs"` instead. With `ANTHROPIC_API_KEY` set, the agent writes new cases for you; without it, `probe work` runs the job's seed cases, which are usually paid already, so write your own.
+The first run downloads the job's workspace from this repository into `~/.probe`, and Foundry fetches the Solidity compiler the job pins (solc 0.8.26). To work on the CLI itself, clone the repository and run `npm install && npm link` in `protocol/`; the linked `probe` then runs the TypeScript sources directly. With `ANTHROPIC_API_KEY` set, the agent writes new cases for you; without it, `probe work` runs the job's seed cases, which are usually paid already, so write your own.
 
 ### Write your own case
 
