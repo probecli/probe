@@ -2,6 +2,16 @@
 
 Changes to the `probe` CLI and the verifier. The ProbeJobs contract is deployed once and does not change; its address is in [deployments/robinhood-chain.json](deployments/robinhood-chain.json).
 
+## 0.3.0 (2026-11-20)
+
+Hook checks: a free, signed safety check for any deployed Uniswap v4 hook on Robinhood Chain.
+
+### Added
+
+- `probe check <hook>` runs nine checks against the chain at one block: contract code (followed through proxies), valid permission flags, every enabled callback implemented, `poolManager()` returning the canonical PoolManager, callbacks reverting for any caller other than the PoolManager (live `eth_call` with a real pool's key), upgradeability, single-key ownership, SELFDESTRUCT and DELEGATECALL in the code, and a Sourcify source match. `--block`, `--rpc` and `--json` are supported; it exits 1 when a check fails.
+- `probe check <hook> --publish` asks the verifier to rerun the checks at the same block and sign the result, and tells you whether its run matched yours.
+- Verifier: `POST /checks`, `GET /hooks`, `GET /hooks/<address>` (report, signed EIP-191 message and signature) and `GET /hooks/<address>/badge.svg`.
+
 ## 0.2.0 (2026-11-19)
 
 Operators can now work a job without an AI key, by writing cases themselves.

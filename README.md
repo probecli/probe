@@ -55,7 +55,16 @@ probe submissions                               # your verdicts across jobs
 
 A case is one Foundry test contract that inherits the job's fixture, asserts a concrete outcome and reads nothing outside the snapshot: no wall clock, randomness, network, files or environment. `probe case new` writes a file that already meets those rules and fails on purpose until you write the scenario.
 
-`probe help` lists every command. `probe jobs`, `probe job` and `probe submissions` take `--json`.
+### Check a deployed hook
+
+```shell
+probe check 0x0af57f62982d03066ef917acad87f771c06528ec            # nine checks at the latest block
+probe check 0x0af57f62982d03066ef917acad87f771c06528ec --publish  # the verifier reruns and signs it
+```
+
+No Foundry or key needed: it reads the chain at one block and checks that the address flags are valid, every enabled callback exists, the hook is bound to the real PoolManager, its callbacks revert for any other caller, and whether it is upgradeable, owned by a single key, uses SELFDESTRUCT or DELEGATECALL, or lacks verified source. Published results are at [probecli.com/hooks](https://probecli.com/hooks), each with the verifier's signature, a rerun command and a README badge. A pass is evidence about one property at one block, not an audit.
+
+`probe help` lists every command. `probe jobs`, `probe job`, `probe submissions` and `probe check` take `--json`.
 
 <img src=".github/assets/terminal.svg" alt="A probe work session: three cases pass locally; the verifier accepts one, marks one a duplicate and fails one for reading wall-clock time" width="100%">
 
