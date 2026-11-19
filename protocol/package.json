@@ -19,7 +19,8 @@
     "test": "node --test test/unit.test.ts test/hookcheck.test.ts",
     "e2e": "node scripts/e2e.ts",
     "preflight": "node scripts/preflight.ts",
-    "dev:stack": "node scripts/dev-stack.ts"
+    "dev:stack": "node scripts/dev-stack.ts",
+    "build": "node scripts/build-cli.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.8.0",
@@ -28,6 +29,7 @@
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
+    "esbuild": "^0.25.10",
     "typescript": "^7.0.2"
   }
 }

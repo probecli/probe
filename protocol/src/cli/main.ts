@@ -17,6 +17,7 @@ import { caseName, caseTemplate, fixtureHelpers, loadCaseFiles } from "./cases.t
 import { ago, deadlineText, printJson, resultCounts } from "./format.ts";
 import { doctor } from "./doctor.ts";
 import { check } from "./check.ts";
+import { VERSION } from "./version.ts";
 import { agentAvailable, AGENT_MODEL, proposeCases, repairCase, type AgentContext, type ProposedCase } from "./agent.ts";
 import { bold, dim, fail, field, hot, note, payout, prompt, task, verdictLine } from "./ui.ts";
 
@@ -537,8 +538,7 @@ const commands: Record<string, (a: string[]) => Promise<void>> = {
 };
 
 if (cmd === "--version" || cmd === "-v" || cmd === "version") {
-  const pkg = JSON.parse(readFileSync(new URL("../../package.json", import.meta.url), "utf8")) as { version: string };
-  console.log(`probe ${pkg.version}`);
+  console.log(`probe ${VERSION}`);
 } else if (!cmd || cmd === "help" || cmd === "--help" || cmd === "-h") {
   console.log(HELP);
 } else if (!commands[cmd]) {
