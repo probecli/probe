@@ -6,12 +6,36 @@ import type { JobSpec, RegisteredJob } from "../shared/spec.ts";
 import type { ProposedCase } from "./agent.ts";
 import { PROBE_HOME, REPO_ROOT } from "./config.ts";
 
+const REPO_URL = process.env.PROBE_REPO_URL ?? "https://github.com/probecli/probe";
+
+/**
+ * A shallow checkout of the public repository, where path-based job
+ * workspaces live when the CLI was installed from npm rather than cloned.
+ * Refreshed to the latest main on each run; an offline run uses what is there.
+ */
+async function publicRepo(): Promise<string> {
+  const dir = join(PROBE_HOME, "repo");
+  if (!existsSync(join(dir, ".git"))) {
+    mkdirSync(PROBE_HOME, { recursive: true });
+    const r = await run("git", ["clone", "--quiet", "--depth", "1", REPO_URL, dir], { cwd: PROBE_HOME, timeoutMs: 600_000, env: process.env });
+    if (r.code !== 0) throw new Error(`could not download job workspaces from ${REPO_URL}: ${r.stderr.trim().split("\n").pop() ?? "git clone failed"}`);
+  } else {
+    const f = await run("git", ["fetch", "--quiet", "--depth", "1", "origin", "main"], { cwd: dir, timeoutMs: 300_000, env: process.env });
+    if (f.code === 0) await run("git", ["reset", "--quiet", "--hard", "FETCH_HEAD"], { cwd: dir, env: process.env });
+  }
+  return dir;
+}
+
 /** Workspace copy for local runs. */
 export async function localWorkspace(job: RegisteredJob): Promise<string> {
   let src: string;
   if (job.workspace.path) {
     src = resolveWorkspacePath(REPO_ROOT, job.workspace.path);
-    if (!existsSync(join(src, "foundry.toml"))) throw new Error(`workspace ${job.workspace.path} not found under ${REPO_ROOT}. Set PROBE_REPO_ROOT.`);
+    if (!existsSync(join(src, "foundry.toml"))) {
+      const repo = await publicRepo();
+      src = resolveWorkspacePath(repo, job.workspace.path);
+      if (!existsSync(join(src, "foundry.toml"))) throw new Error(`workspace ${job.workspace.path} is not in ${REPO_URL}. Set PROBE_REPO_ROOT to a checkout that has it.`);
+    }
   } else {
     src = join(PROBE_HOME, "src", job.slug);
     if (!existsSync(join(src, ".git"))) {
