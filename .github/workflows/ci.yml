@@ -34,3 +34,13 @@ jobs:
         working-directory: protocol
       - run: npm test
         working-directory: protocol
+      - name: Pack and install the CLI as npm users get it
+        working-directory: protocol
+        run: |
+          npm run build
+          npm pack --pack-destination "$RUNNER_TEMP"
+          npm install -g "$RUNNER_TEMP"/probecli-cli-*.tgz
+          cd "$RUNNER_TEMP"
+          probe --version
+          probe help > /dev/null
+          probe check 0x0af57f62982d03066ef917acad87f771c06528ec --json > /dev/null

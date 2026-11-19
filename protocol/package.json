@@ -1,16 +1,41 @@
 {
-  "name": "probe-protocol",
+  "name": "@probecli/cli",
   "version": "0.3.0",
-  "private": true,
   "license": "MIT",
-  "description": "PROBE verifier service and probe CLI",
+  "description": "probe: run reproducible tests for Uniswap v4 hooks, get paid for verified work, and check any deployed hook.",
+  "keywords": [
+    "uniswap",
+    "uniswap-v4",
+    "hooks",
+    "foundry",
+    "solidity",
+    "security",
+    "testing",
+    "robinhood-chain",
+    "cli"
+  ],
+  "homepage": "https://probecli.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/probecli/probe.git",
+    "directory": "protocol"
+  },
+  "bugs": {
+    "url": "https://github.com/probecli/probe/issues"
+  },
   "type": "module",
   "engines": {
     "node": ">=22.18"
   },
   "bin": {
-    "probe": "./bin/probe.mjs"
+    "probe": "bin/probe.mjs"
   },
+  "files": [
+    "bin/probe.mjs",
+    "dist/probe.mjs",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "verifier": "node src/verifier/server.ts",
     "probe": "node bin/probe.mjs",
@@ -20,7 +45,8 @@
     "e2e": "node scripts/e2e.ts",
     "preflight": "node scripts/preflight.ts",
     "dev:stack": "node scripts/dev-stack.ts",
-    "build": "node scripts/build-cli.ts"
+    "build": "node scripts/build-cli.ts",
+    "prepublishOnly": "npm run typecheck && npm test && npm run build"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.8.0",
@@ -31,5 +57,8 @@
     "@types/node": "^26.6.6",
     "esbuild": "^0.25.10",
     "typescript": "^7.0.2"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
