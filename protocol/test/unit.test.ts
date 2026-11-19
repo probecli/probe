@@ -175,3 +175,15 @@ test("counts verdicts, most important first, with unfinished ones as pending", (
     { verdict: "pending", count: 1 },
   ]);
 });
+
+// ------------------------------------------------------------ doctor
+
+import { atLeast, MIN_NODE } from "../src/cli/doctor.ts";
+
+test("compares tool versions", () => {
+  assert.equal(atLeast("22.18.0", MIN_NODE), true);
+  assert.equal(atLeast("v24.1.0", MIN_NODE), true);
+  assert.equal(atLeast("22.17.9", MIN_NODE), false);
+  assert.equal(atLeast("22.18", "22.18.0"), true);
+  assert.equal(atLeast("20.19.0", MIN_NODE), false);
+});

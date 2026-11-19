@@ -15,6 +15,7 @@ import { api, clientFor, operator } from "./client.ts";
 import { localWorkspace, runLocal, seedCases } from "./workspace.ts";
 import { caseName, caseTemplate, fixtureHelpers, loadCaseFiles } from "./cases.ts";
 import { deadlineText, printJson, resultCounts } from "./format.ts";
+import { doctor } from "./doctor.ts";
 import { agentAvailable, AGENT_MODEL, proposeCases, repairCase, type AgentContext, type ProposedCase } from "./agent.ts";
 import { bold, dim, fail, field, hot, note, payout, prompt, task, verdictLine } from "./ui.ts";
 
@@ -23,6 +24,7 @@ const HELP = `${bold("probe")}: test Uniswap v4 hooks, get paid for verified wor
 Operator
   probe init [--verifier <url>]       Create an operator key and save settings
   probe whoami                        Show your operator address and verifier
+  probe doctor                        Check Node, Foundry, the verifier, the chain and your key
   probe jobs [--json]                 List jobs on the verifier
   probe job <job> [--json]            Show a job's scope, rules, budget and results
   probe work <job> [options]          Run a job and submit what passes
@@ -476,6 +478,7 @@ const [cmd, ...rest] = process.argv.slice(2);
 const commands: Record<string, (a: string[]) => Promise<void>> = {
   init,
   whoami,
+  doctor,
   jobs,
   job,
   work,
