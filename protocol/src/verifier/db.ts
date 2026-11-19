@@ -3,6 +3,7 @@ import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import type { PublicSubmission, Verdict } from "../shared/api.ts";
 import type { RegisteredJob } from "../shared/spec.ts";
+import type { HookReport } from "../shared/hookcheck.ts";
 import type { JobRequestInput, JobRequestStatus } from "../shared/messages.ts";
 
 export type JobRequestRow = JobRequestInput & {
@@ -15,6 +16,12 @@ export type JobRequestRow = JobRequestInput & {
 };
 
 export type SubmissionRow = PublicSubmission & { source: string; sourceHash: string; path: string[] | null };
+
+export type HookCheckRow = { id: string; report: HookReport; signature: string; signer: string; createdAt: number };
+
+function hookCheckRow(r: Record<string, unknown>): HookCheckRow {
+  return { id: String(r.id), report: JSON.parse(String(r.report)) as HookReport, signature: String(r.signature), signer: String(r.signer), createdAt: Number(r.created_at) };
+}
 
 export class Store {
   db: DatabaseSync;
@@ -64,6 +71,17 @@ export class Store {
         updated_at INTEGER NOT NULL
       );
       CREATE INDEX IF NOT EXISTS job_requests_wallet ON job_requests (wallet, created_at);
+      CREATE TABLE IF NOT EXISTS hook_checks (
+        id TEXT PRIMARY KEY,
+        hook TEXT NOT NULL,
+        chain_id INTEGER NOT NULL,
+        block TEXT NOT NULL,
+        report TEXT NOT NULL,
+        signature TEXT NOT NULL,
+        signer TEXT NOT NULL,
+        created_at INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS hook_checks_hook ON hook_checks (hook, created_at);
       CREATE TABLE IF NOT EXISTS reports (
         id TEXT PRIMARY KEY,
         submission_id TEXT NOT NULL,
@@ -72,6 +90,37 @@ export class Store {
         created_at INTEGER NOT NULL
       );
     `);
+  }
+
+  // ---------------------------------------------------------- hook checks
+
+  insertHookCheck(c: Omit<HookCheckRow, "createdAt">) {
+    const now = Date.now();
+    this.db
+      .prepare("INSERT INTO hook_checks (id, hook, chain_id, block, report, signature, signer, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
+      .run(c.id, c.report.hook.toLowerCase(), c.report.chainId, c.report.block, JSON.stringify(c.report), c.signature, c.signer, now);
+    return { ...c, createdAt: now };
+  }
+
+  latestHookCheck(hook: string): HookCheckRow | null {
+    const r = this.db.prepare("SELECT * FROM hook_checks WHERE hook = ? ORDER BY created_at DESC LIMIT 1").get(hook.toLowerCase()) as Record<string, unknown> | undefined;
+    return r ? hookCheckRow(r) : null;
+  }
+
+  hookCheckHistory(hook: string, limit = 20) {
+    return (this.db.prepare("SELECT id, block, report, created_at FROM hook_checks WHERE hook = ? ORDER BY created_at DESC LIMIT ?").all(hook.toLowerCase(), limit) as Record<string, unknown>[]).map((r) => {
+      const report = JSON.parse(String(r.report)) as HookReport;
+      return { id: String(r.id), block: String(r.block), summary: report.summary, createdAt: Number(r.created_at) };
+    });
+  }
+
+  /** The newest check of every hook, newest first. */
+  listHookChecks(limit = 100): HookCheckRow[] {
+    return (
+      this.db
+        .prepare("SELECT c.* FROM hook_checks c JOIN (SELECT hook, MAX(created_at) AS m FROM hook_checks GROUP BY hook) l ON c.hook = l.hook AND c.created_at = l.m ORDER BY c.created_at DESC LIMIT ?")
+        .all(limit) as Record<string, unknown>[]
+    ).map(hookCheckRow);
   }
 
   // ---------------------------------------------------------- job requests

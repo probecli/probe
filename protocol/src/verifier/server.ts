@@ -25,6 +25,8 @@ import {
 } from "../shared/messages.ts";
 import { probeJobsAbi } from "../shared/artifacts.ts";
 import { shortFp } from "../shared/forge.ts";
+import { checkHook, POOL_MANAGERS, reportMessage, type HookReport } from "../shared/hookcheck.ts";
+import { privateKeyToAccount } from "viem/accounts";
 import type { JobView } from "../shared/api.ts";
 
 const cfg = loadConfig();
@@ -393,6 +395,74 @@ async function updateRequest(id: string, body: unknown) {
   return { id, status, note };
 }
 
+// ------------------------------------------------------------------ hook checks
+
+const signerAccount = privateKeyToAccount(cfg.privateKey);
+const running = new Map<string, Promise<unknown>>();
+
+/** Reproduce the standard checks for a hook at a block and sign the result. */
+async function createHookCheck(body: unknown) {
+  const b = (body ?? {}) as { hook?: unknown; block?: unknown };
+  if (typeof b.hook !== "string" || !isAddress(b.hook)) throw new HttpError(400, "hook must be an address.");
+  if (!POOL_MANAGERS[cfg.chainId]) throw new HttpError(400, `This verifier's chain (${cfg.chainId}) has no known Uniswap v4 PoolManager.`);
+  const hook = b.hook.toLowerCase();
+  const latest = await client.getBlockNumber();
+  let block = latest;
+  if (b.block !== undefined) {
+    if (typeof b.block !== "string" || !/^\d+$/.test(b.block)) throw new HttpError(400, "block must be a block number.");
+    block = BigInt(b.block);
+    if (block > latest) throw new HttpError(400, `Block ${block} is in the future. The chain is at ${latest}.`);
+  }
+  // A recent signed check of the same hook is returned instead of running again.
+  const prev = store.latestHookCheck(hook);
+  if (prev && b.block === undefined && Date.now() - prev.createdAt < 10 * 60_000) return prev;
+  if (prev && prev.report.block === block.toString()) return prev;
+
+  const key = `${hook}:${block}`;
+  if (!running.has(key)) {
+    running.set(
+      key,
+      (async () => {
+        let report: HookReport;
+        try {
+          report = await checkHook(client, hook, { chainId: cfg.chainId, block, poolScanBlocks: 40_000_000n });
+        } catch (e) {
+          const m = (e as Error).message;
+          throw new HttpError(/missing trie node|historical state|not available/i.test(m) ? 400 : 502, /missing trie node|historical state/i.test(m) ? `The RPC has no state for block ${block}. Check a more recent block.` : `The check could not run: ${m.split("\n")[0]}`);
+        }
+        const signature = await signerAccount.signMessage({ message: reportMessage(report) });
+        return store.insertHookCheck({ id: randomUUID(), report, signature, signer: cfg.address });
+      })().finally(() => running.delete(key)),
+    );
+  }
+  return running.get(key)!;
+}
+
+function hookCheckView(hook: string) {
+  const latest = store.latestHookCheck(hook);
+  if (!latest) throw new HttpError(404, "This hook has not been checked yet.");
+  return { ...latest, message: reportMessage(latest.report), history: store.hookCheckHistory(hook) };
+}
+
+function badgeSvg(hook: string) {
+  const latest = store.latestHookCheck(hook);
+  const s = latest?.report.summary;
+  const right = !s ? "not checked" : s.failed ? `${s.failed} failed` : `${s.passed} of ${s.total} passed`;
+  const color = !s ? "#5F5D57" : s.failed ? "#C2311D" : s.warnings ? "#4A4945" : "#1F7A4D";
+  const left = "PROBE check";
+  const w = (t: string) => Math.round(t.length * 6.6 + 16);
+  const lw = w(left) + 14;
+  const rw = w(right);
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${lw + rw}" height="20" role="img" aria-label="${left}: ${right}">
+<title>${left}: ${right}</title>
+<clipPath id="r"><rect width="${lw + rw}" height="20" rx="4"/></clipPath>
+<g clip-path="url(#r)"><rect width="${lw}" height="20" fill="#141413"/><rect x="${lw}" width="${rw}" height="20" fill="${color}"/></g>
+<g transform="translate(6 4) scale(0.375)" fill="none"><path d="M4.5 5.5 L16 13.4 M4.5 26.5 L16 18.6" stroke="#EDEBE4" stroke-width="5"/><circle cx="24.5" cy="16" r="4.25" fill="#E83F28"/></g>
+<g fill="#fff" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11" text-rendering="geometricPrecision">
+<text x="${20 + (lw - 20) / 2}" y="14" text-anchor="middle">${left}</text>
+<text x="${lw + rw / 2}" y="14" text-anchor="middle">${right}</text></g></svg>`;
+}
+
 // ------------------------------------------------------------------ status page
 
 const SITE_URL = process.env.PUBLIC_SITE_URL ?? "https://probecli.com";
@@ -492,6 +562,19 @@ const server = createServer(async (req, res) => {
       if (req.method === "POST" && parts.length === 3 && parts[2] === "status") {
         rateLimit(req, 30);
         return send(res, 200, await updateRequest(parts[1], await readBody(req)));
+      }
+    }
+    if (parts[0] === "checks" && req.method === "POST" && parts.length === 1) {
+      rateLimit(req, 6);
+      return send(res, 201, await createHookCheck(await readBody(req, 4 * 1024)));
+    }
+    if (parts[0] === "hooks" && req.method === "GET") {
+      if (parts.length === 1) return send(res, 200, store.listHookChecks().map((c) => ({ hook: c.report.hook, block: c.report.block, flags: c.report.flags, summary: c.report.summary, checkedAt: c.report.checkedAt })));
+      if (!isAddress(parts[1] ?? "")) throw new HttpError(400, "Not an address.");
+      if (parts.length === 2) return send(res, 200, hookCheckView(parts[1]));
+      if (parts.length === 3 && parts[2] === "badge.svg") {
+        res.writeHead(200, { "content-type": "image/svg+xml; charset=utf-8", "cache-control": "public, max-age=300", "access-control-allow-origin": "*" });
+        return res.end(badgeSvg(parts[1]));
       }
     }
     if (parts[0] === "submissions") {
