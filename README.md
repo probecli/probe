@@ -109,9 +109,21 @@ No Foundry or key needed: it reads the chain at one block and checks that the ad
 | Verifier | [`verifier.probecli.com`](https://verifier.probecli.com) · `0xd3c30efc0b0867963193c1d2dfd9fe31a442d746` |
 | Owner | `0xfdbf67fbf0d089212189d9b35546962100a0b764` |
 | Source | [Verified on Sourcify](https://repo.sourcify.dev/4663/0x75a7af44fe0117b1f5ff11eddad11fe1e0d34189), exact match |
-| First paid job | Job 1 funded with 0.002 ETH ([tx](https://robinhoodchain.blockscout.com/tx/0xeb8b6baaeca17c008e19fbaf96dfa528b1a0b2157381a6b83c20c20da33a38f1)); one case accepted and paid 0.0002 ETH ([tx](https://robinhoodchain.blockscout.com/tx/0x1bd71402396b9c4ddb6e01a023c4f8b0ca9da0c4864a60551e65f951371c08f0)); operator withdrew it ([tx](https://robinhoodchain.blockscout.com/tx/0x3cff2fe1ddcdfb6541faf89cdd9d23b72dd995ca29593926c9d7ad1626d3f5b2)) |
+| Job 1 | Funded with 0.002 ETH by the PROBE team ([tx](https://robinhoodchain.blockscout.com/tx/0xeb8b6baaeca17c008e19fbaf96dfa528b1a0b2157381a6b83c20c20da33a38f1)). First accepted case paid 0.0002 ETH ([tx](https://robinhoodchain.blockscout.com/tx/0x1bd71402396b9c4ddb6e01a023c4f8b0ca9da0c4864a60551e65f951371c08f0)) and withdrawn ([tx](https://robinhoodchain.blockscout.com/tx/0x3cff2fe1ddcdfb6541faf89cdd9d23b72dd995ca29593926c9d7ad1626d3f5b2)). 7 cases accepted so far, all by team operators listed in [`team-runs/`](team-runs) |
 
-Deployment, approval and first-job transactions: [`deployments/robinhood-chain.json`](deployments/robinhood-chain.json). The first job was funded by the PROBE team to run the full loop on mainnet; see it at [probecli.com/jobs/scheduled-exit-fee-withdrawals](https://probecli.com/jobs/scheduled-exit-fee-withdrawals).
+Deployment, approval and first-job transactions: [`deployments/robinhood-chain.json`](deployments/robinhood-chain.json). The first job was funded by the PROBE team from the owner wallet to run the full loop on mainnet; see it at [probecli.com/jobs/scheduled-exit-fee-withdrawals](https://probecli.com/jobs/scheduled-exit-fee-withdrawals). Every operator address the team has used is in [`team-runs/`](team-runs).
+
+### Verify a job's spec
+
+The contract stores a hash of each job's spec, so the rules operators work under cannot change after funding. The spec registered for job 1 is [`deployments/jobs/1.json`](deployments/jobs/1.json). Hash it and compare with the chain:
+
+```shell
+cd protocol && node scripts/spec-hash.ts ../deployments/jobs/1.json
+cast call 0x75a7af44fe0117b1f5ff11eddad11fe1e0d34189 "getJob(uint256)((address,address,address,address,uint256,uint256,uint256,uint256,uint64,uint32,uint8,bytes32,bytes32))" 1 \
+  --rpc-url https://rpc.mainnet.chain.robinhood.com   # the second-to-last field is the spec hash
+```
+
+Both print `0x7fe8f1c8bd687ab1a99e5a7c7c4dafdc9dca8a669492b8bb9cde1fe60090ddf3`. [`jobs/scheduled-exit-fee/job.json`](jobs/scheduled-exit-fee/job.json) is the same job's template for local runs on a test chain, so its network and sponsor differ.
 
 ### Verify the deployed contract
 
