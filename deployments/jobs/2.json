@@ -1,0 +1,63 @@
+{
+  "slug": "volume-discount-fee-swaps",
+  "title": "Swap fees on a volume-discount hook",
+  "summary": "Swap against a Uniswap v4 hook that lowers each trader's fee as their volume grows, and test who gets which fee.",
+  "objective": "Show whether a trader can pay a fee other than the one their own swap volume entitles them to, or move another trader's volume or fee.",
+  "inScope": [
+    "beforeSwap and afterSwap on the job's dynamic-fee pool, both directions, exact input and exact output",
+    "How the trader is identified, with and without hookData",
+    "Tier changes through setTiers, and the fee returned by feeFor"
+  ],
+  "outOfScope": [
+    "The Uniswap v4 PoolManager and periphery contracts themselves",
+    "Owner key compromise",
+    "Gas griefing without a balance effect"
+  ],
+  "acceptanceRules": [
+    "The case inherits the job fixture and reproduces on the pinned snapshot with no extra state.",
+    "The case asserts a concrete fee, volume or balance outcome.",
+    "A case is a duplicate if its execution path through the hook matches an accepted case.",
+    "Cases that read wall-clock time, randomness, the network, files or environment variables fail verification.",
+    "Cases may not rewrite contract code or storage."
+  ],
+  "network": {
+    "id": "robinhood-chain",
+    "name": "Robinhood Chain"
+  },
+  "hook": {
+    "name": "VolumeDiscountHook",
+    "callbacks": [
+      "beforeSwap",
+      "afterSwap"
+    ]
+  },
+  "snapshot": {
+    "id": "volume-discount-snap-5200000",
+    "block": 5200000,
+    "note": "Foundry fixture pinned to block 5,200,000 and a fixed timestamp: a v4 PoolManager, two tokens, the hook at a flag-valid address, and one dynamic-fee pool with deep liquidity."
+  },
+  "workspace": {
+    "git": "https://github.com/probecli/job-volume-discount",
+    "commit": "dba324ee07ad7b72c016bc147af4876efdc97829"
+  },
+  "fixture": {
+    "base": "ProbeCase",
+    "import": "../ProbeCase.sol"
+  },
+  "targets": [
+    "src/VolumeDiscountHook.sol"
+  ],
+  "allowedImports": [
+    "forge-std/",
+    "v4-core/",
+    "solmate/"
+  ],
+  "seedCases": "seed-cases",
+  "rewardModel": "findings-and-coverage",
+  "reward": {
+    "headline": "0.002 ETH per accepted case",
+    "detail": "Each new execution path through the hook that reproduces and asserts an outcome is paid once, from the job's on-chain budget by the ProbeJobs contract."
+  },
+  "sponsor": "PROBE team (open bounty for the first outside operators)",
+  "reportKey": "KCO4bE31PPeHAlECbWiAVGej6idmD0EYUfPLRQXYJXY="
+}

@@ -110,12 +110,13 @@ No Foundry or key needed: it reads the chain at one block and checks that the ad
 | Owner | `0xfdbf67fbf0d089212189d9b35546962100a0b764` |
 | Source | [Verified on Sourcify](https://repo.sourcify.dev/4663/0x75a7af44fe0117b1f5ff11eddad11fe1e0d34189), exact match |
 | Job 1 | Funded with 0.002 ETH by the PROBE team ([tx](https://robinhoodchain.blockscout.com/tx/0xeb8b6baaeca17c008e19fbaf96dfa528b1a0b2157381a6b83c20c20da33a38f1)). First accepted case paid 0.0002 ETH ([tx](https://robinhoodchain.blockscout.com/tx/0x1bd71402396b9c4ddb6e01a023c4f8b0ca9da0c4864a60551e65f951371c08f0)) and withdrawn ([tx](https://robinhoodchain.blockscout.com/tx/0x3cff2fe1ddcdfb6541faf89cdd9d23b72dd995ca29593926c9d7ad1626d3f5b2)). 7 cases accepted so far, all by team operators listed in [`team-runs/`](team-runs) |
+| Job 2 | Funded with 0.01 ETH by the PROBE team ([tx](https://robinhoodchain.blockscout.com/tx/0x9d1d5f9245237bef9cf927997720c87a5f9be93206793e1d6e989fa1a890f05d)) as an open bounty: 0.002 ETH per accepted case. Workspace: [`probecli/job-volume-discount`](https://github.com/probecli/job-volume-discount) |
 
 Deployment, approval and first-job transactions: [`deployments/robinhood-chain.json`](deployments/robinhood-chain.json). The first job was funded by the PROBE team from the owner wallet to run the full loop on mainnet; see it at [probecli.com/jobs/scheduled-exit-fee-withdrawals](https://probecli.com/jobs/scheduled-exit-fee-withdrawals). Every operator address the team has used is in [`team-runs/`](team-runs).
 
 ### Verify a job's spec
 
-The contract stores a hash of each job's spec, so the rules operators work under cannot change after funding. The spec registered for job 1 is [`deployments/jobs/1.json`](deployments/jobs/1.json). Hash it and compare with the chain:
+The contract stores a hash of each job's spec, so the rules operators work under cannot change after funding. The specs registered for each job are in [`deployments/jobs/`](deployments/jobs), named by job id. Hash one and compare with the chain:
 
 ```shell
 cd protocol && node scripts/spec-hash.ts ../deployments/jobs/1.json
@@ -123,7 +124,7 @@ cast call 0x75a7af44fe0117b1f5ff11eddad11fe1e0d34189 "getJob(uint256)((address,a
   --rpc-url https://rpc.mainnet.chain.robinhood.com   # the second-to-last field is the spec hash
 ```
 
-Both print `0x7fe8f1c8bd687ab1a99e5a7c7c4dafdc9dca8a669492b8bb9cde1fe60090ddf3`. [`jobs/scheduled-exit-fee/job.json`](jobs/scheduled-exit-fee/job.json) is the same job's template for local runs on a test chain, so its network and sponsor differ.
+For job 1 both print `0x7fe8f1c8bd687ab1a99e5a7c7c4dafdc9dca8a669492b8bb9cde1fe60090ddf3`; for job 2 (`jobs/2.json` and `getJob(uint256)… 2`), `0xcdead47cb3ad4888d4ef30f8981766018ba62e64de142591d758435ef438a326`. [`jobs/scheduled-exit-fee/job.json`](jobs/scheduled-exit-fee/job.json) is the same job's template for local runs on a test chain, so its network and sponsor differ.
 
 ### Verify the deployed contract
 

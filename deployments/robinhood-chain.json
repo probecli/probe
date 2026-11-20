@@ -23,7 +23,21 @@
       "spec": "deployments/jobs/1.json",
       "specHash": "0x7fe8f1c8bd687ab1a99e5a7c7c4dafdc9dca8a669492b8bb9cde1fe60090ddf3",
       "sponsorNote": "Funded by the PROBE team from the owner wallet to prove the full loop on mainnet."
-    }
+    },
+    "jobs": [
+      {
+        "jobId": 2,
+        "slug": "volume-discount-fee-swaps",
+        "token": "ETH",
+        "funded": "0.01",
+        "rewardPerAccepted": "0.002",
+        "createTx": "0x9d1d5f9245237bef9cf927997720c87a5f9be93206793e1d6e989fa1a890f05d",
+        "workspace": "https://github.com/probecli/job-volume-discount",
+        "spec": "deployments/jobs/2.json",
+        "specHash": "0xcdead47cb3ad4888d4ef30f8981766018ba62e64de142591d758435ef438a326",
+        "sponsorNote": "Funded by the PROBE team from the owner wallet as an open bounty for outside operators."
+      }
+    ]
   },
   "testnet": {
     "chainId": 46630,
