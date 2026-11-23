@@ -29,6 +29,13 @@ It also reports whether the hook is upgradeable, owned by a single key, uses SEL
 
 `--publish` has the verifier rerun the check at the same block and sign it. The result then appears at [probecli.com/hooks](https://probecli.com/hooks) with a badge you can put in a README. A pass is evidence about one property at one block, not an audit.
 
+Anyone can check a published result without trusting the website:
+
+```shell
+probe hooks                                                     # hooks with a published check
+probe verify hook 0x0af57f62982d03066ef917acad87f771c06528ec    # signature, signer, and signer approved on-chain
+```
+
 ## Run a job
 
 ```shell
@@ -51,7 +58,15 @@ probe case check <job> FeeAfterNextBlock.t.sol
 probe work <job> --case FeeAfterNextBlock.t.sol
 ```
 
+Before you work a job, confirm its scope and rules are the ones fixed at funding:
+
+```shell
+probe verify job volume-discount-fee-swaps   # recomputes the spec hash and compares it with getJob(id)
+```
+
 `probe help` lists every command.
+
+If `npm install -g` fails with EACCES, your Node lives in a folder your user cannot write. Set `npm config set prefix ~/.npm-global`, add `~/.npm-global/bin` to your PATH, and install again, or run `npx @probecli/cli` without installing.
 
 ## Links
 
