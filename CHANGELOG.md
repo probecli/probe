@@ -2,6 +2,21 @@
 
 Changes to the `probe` CLI and the verifier. The ProbeJobs contract is deployed once and does not change; its address is in [deployments/robinhood-chain.json](deployments/robinhood-chain.json).
 
+## 0.5.0 (2026-11-23)
+
+Check PROBE's claims from your terminal instead of trusting the website.
+
+### Added
+
+- `probe verify job <job>` recomputes a job's spec hash from the spec the verifier serves and compares it with the hash the ProbeJobs contract stored at funding, so you can confirm the scope and rules have not changed. Exits 1 on a mismatch.
+- `probe verify hook <address>` rebuilds the signed message from a published hook check's results, recovers the signer from the signature, and reads `approvedVerifier(signer)` on ProbeJobs. Exits 1 if any of the three does not hold.
+- `probe hooks` lists hooks with a published, signed check. `--json` on both.
+
+### Changed
+
+- The hook report page shows the `probe verify hook` command beside the rerun command.
+- Troubleshooting and the npm README explain the EACCES error from `npm install -g` and how to install without sudo.
+
 ## 0.4.0 (2026-11-19)
 
 The CLI is on npm: `npm install -g @probecli/cli`.
