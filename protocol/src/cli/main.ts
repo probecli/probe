@@ -17,6 +17,7 @@ import { caseName, caseTemplate, fixtureHelpers, loadCaseFiles } from "./cases.t
 import { ago, deadlineText, printJson, resultCounts } from "./format.ts";
 import { doctor } from "./doctor.ts";
 import { check } from "./check.ts";
+import { hooks, verify } from "./verify.ts";
 import { VERSION } from "./version.ts";
 import { agentAvailable, AGENT_MODEL, proposeCases, repairCase, type AgentContext, type ProposedCase } from "./agent.ts";
 import { bold, dim, fail, field, hot, note, payout, prompt, task, verdictLine } from "./ui.ts";
@@ -48,6 +49,12 @@ Hooks
       --rpc <url>                     Chain RPC (default: Robinhood Chain mainnet)
       --publish                       Have the verifier reproduce, sign and publish the result
       --json                          Print the report as JSON
+  probe hooks [--json]                List hooks with a published, signed check
+
+Verify
+  probe verify job <job>              Recompute a job's spec hash and compare it with the chain
+  probe verify hook <address>         Check a published hook check's signature and that its signer
+                                      is an approved verifier on ProbeJobs
 
 Sponsor
   probe sponsor keygen                Create your report-decryption key pair
@@ -515,6 +522,8 @@ const commands: Record<string, (a: string[]) => Promise<void>> = {
   whoami,
   doctor,
   check,
+  hooks,
+  verify,
   jobs,
   job,
   work,
