@@ -41,7 +41,7 @@
     "probe": "node bin/probe.mjs",
     "abi": "node scripts/gen-abi.ts",
     "typecheck": "tsc --noEmit",
-    "test": "node --test test/unit.test.ts test/hookcheck.test.ts",
+    "test": "node --test test/unit.test.ts test/hookcheck.test.ts test/verify.test.ts",
     "e2e": "node scripts/e2e.ts",
     "preflight": "node scripts/preflight.ts",
     "dev:stack": "node scripts/dev-stack.ts",
