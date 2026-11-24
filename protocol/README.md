@@ -34,7 +34,10 @@ Anyone can check a published result without trusting the website:
 ```shell
 probe hooks                                                     # hooks with a published check
 probe verify hook 0x0af57f62982d03066ef917acad87f771c06528ec    # signature, signer, and signer approved on-chain
+probe verify hook 0x0af57f62982d03066ef917acad87f771c06528ec --rerun --rpc <archive-rpc>   # also rerun the checks at that block
 ```
+
+The public RPC keeps recent state only, so `--rerun` on an older check needs an archive RPC.
 
 ## Run a job
 

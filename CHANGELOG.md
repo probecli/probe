@@ -2,6 +2,12 @@
 
 Changes to the `probe` CLI and the verifier. The ProbeJobs contract is deployed once and does not change; its address is in [deployments/robinhood-chain.json](deployments/robinhood-chain.json).
 
+## Unreleased
+
+### Added
+
+- `probe verify hook <address> --rerun` also runs the standard checks at the published block and compares every check's status with the published report. The signature shows who published a result; the rerun shows the result is right. If the RPC no longer has that block's state, it says so and asks for an archive RPC with `--rpc`.
+
 ## 0.5.0 (2026-11-23)
 
 Check PROBE's claims from your terminal instead of trusting the website.
