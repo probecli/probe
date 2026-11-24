@@ -79,3 +79,21 @@ export async function verifyHookCheck(c: SignedHookCheck, approvedOnChain: (sign
   }
   return findings;
 }
+
+/**
+ * A signature proves who published a hook check, not that its results are right. Rerunning the
+ * checks at the same block against any RPC must give the same status for every check; wording can
+ * differ with the pool sampled, so only ids and statuses are compared.
+ */
+export function compareRerun(published: HookReport, rerun: HookReport): Finding {
+  const mine = new Map(rerun.checks.map((c) => [c.id, c.status]));
+  const theirs = new Map(published.checks.map((c) => [c.id, c.status]));
+  const diffs = [...new Set([...theirs.keys(), ...mine.keys()])]
+    .filter((id) => theirs.get(id) !== mine.get(id))
+    .map((id) => `${id}: published ${theirs.get(id) ?? "missing"}, rerun ${mine.get(id) ?? "missing"}`);
+  return {
+    ok: diffs.length === 0,
+    title: "Rerunning the checks at the same block gives the same results",
+    detail: diffs.length ? diffs.join("; ") : `${rerun.checks.length} of ${published.checks.length} checks match at block ${published.block}`,
+  };
+}

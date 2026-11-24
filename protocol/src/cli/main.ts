@@ -55,6 +55,8 @@ Verify
   probe verify job <job>              Recompute a job's spec hash and compare it with the chain
   probe verify hook <address>         Check a published hook check's signature and that its signer
                                       is an approved verifier on ProbeJobs
+      --rerun                         Also rerun the checks at the same block and compare
+      --rpc <url>                     Chain RPC for the rerun and the approval lookup
 
 Sponsor
   probe sponsor keygen                Create your report-decryption key pair

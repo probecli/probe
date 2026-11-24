@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import type { JobView } from "../src/shared/api.ts";
 import { reportMessage, type HookReport } from "../src/shared/hookcheck.ts";
-import { registeredSpec, verifyHookCheck, verifyJobSpec } from "../src/shared/verify.ts";
+import { compareRerun, registeredSpec, verifyHookCheck, verifyJobSpec } from "../src/shared/verify.ts";
 
 // Job 2 on Robinhood Chain mainnet: the registered spec and the hash getJob(2) returns.
 const JOB2_SPEC = JSON.parse(readFileSync(new URL("../../deployments/jobs/2.json", import.meta.url), "utf8"));
@@ -85,4 +85,22 @@ test("a signer field that does not match the signature is reported", async () =>
   const other = privateKeyToAccount(generatePrivateKey()).address;
   const findings = await verifyHookCheck({ ...check, signer: other }, async () => true);
   assert.equal(findings[1].ok, false);
+});
+
+test("a rerun with the same statuses matches, whatever the wording", () => {
+  const rerun = { ...REPORT, checks: REPORT.checks.map((c) => ({ ...c, detail: "worded differently" })) };
+  assert.equal(compareRerun(REPORT, rerun).ok, true);
+});
+
+test("a rerun that disagrees names the check", () => {
+  const rerun = { ...REPORT, checks: REPORT.checks.map((c) => ({ ...c, status: "fail" as const })) };
+  const f = compareRerun(REPORT, rerun);
+  assert.equal(f.ok, false);
+  assert.match(f.detail, /code: published pass, rerun fail/);
+});
+
+test("a check missing from the rerun is reported", () => {
+  const f = compareRerun(REPORT, { ...REPORT, checks: [] });
+  assert.equal(f.ok, false);
+  assert.match(f.detail, /rerun missing/);
 });
