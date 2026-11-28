@@ -1,6 +1,6 @@
 {
   "name": "@probecli/cli",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "license": "MIT",
   "description": "probe: run reproducible tests for Uniswap v4 hooks, get paid for verified work, and check any deployed hook.",
   "keywords": [

@@ -2,7 +2,9 @@
 
 Changes to the `probe` CLI and the verifier. The ProbeJobs contract is deployed once and does not change; its address is in [deployments/robinhood-chain.json](deployments/robinhood-chain.json).
 
-## Unreleased
+## 0.6.0 (2026-11-28)
+
+Check that a published hook check is right, not only who signed it.
 
 ### Added
 
